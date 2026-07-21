@@ -9,26 +9,24 @@
 
 本说明面向具备 Node.js、npm 和微信开发者工具基本使用经验的开发人员。
 
-## 二、技术栈
+## 二、技术架构
 
-- uni-app
-- Vue 3
-- Pinia
-- 微信小程序云开发
-- Node.js 云函数
-- CloudBase 云数据库
-- CloudBase 云存储
-- 微信 OpenID 登录
+- 前端框架：uni-app、Vue 3
+- 状态管理：Pinia
+- 运行平台：微信小程序云开发
+- 后端服务：Node.js 云函数
+- 数据存储：CloudBase 云数据库、CloudBase 云存储
+- 身份认证：微信 OpenID
 
 ## 三、目录结构
 
 ```text
-miniapp/                              小程序前端源码
-cloudfunctions/api/                   主要业务云函数
-cloudfunctions/initDormData/          宿舍楼和房间初始化云函数
-cloudfunctions/scheduledMaintenance/  订单失效和贡献值结算定时任务
-cloudfunctions/weeklyQuotaMaintenance/每周贡献值和发单次数结算任务
-docs/                                 部署和数据库配置说明
+miniapp/                               小程序前端源码
+cloudfunctions/api/                    主要业务云函数
+cloudfunctions/initDormData/           宿舍楼和房间初始化云函数
+cloudfunctions/scheduledMaintenance/   订单失效和奖励结算任务
+cloudfunctions/weeklyQuotaMaintenance/ 每周贡献值和发单次数结算任务
+docs/                                  部署和数据库配置说明
 ```
 
 ## 四、环境要求
@@ -103,9 +101,7 @@ miniapp/dist/build/mp-weixin
 
 集合需要在 CloudBase 控制台中创建，字段会在云函数写入数据时自动生成。`systemRules` 可以保持为空，程序会使用默认规则。
 
-数据库集合权限按照 [`docs/CloudBase部署与索引配置.md`](docs/CloudBase部署与索引配置.md) 设置。核心业务集合由云函数统一访问，不允许小程序客户端直接写入。
-
-数据库索引按照 [`docs/CloudBase部署与索引配置.md`](docs/CloudBase部署与索引配置.md) 中的索引清单创建，不要删除已有集合和已有索引。
+数据库集合权限和索引配置请参阅：[CloudBase 部署与索引配置](docs/cloudbase-deployment.md)。核心业务集合由云函数统一访问，不允许小程序客户端直接写入。不要删除已有集合和已有索引。
 
 ## 九、云函数部署
 
@@ -136,7 +132,7 @@ cloudfunctions/initDormData
 }
 ```
 
-> **注意：** `initDormData` 只应在首次部署或确认需要重建宿舍数据时执行。已有正式宿舍数据时不要重复运行。初始化完成后应删除或更换临时令牌。
+> **注意：** `initDormData` 会重建宿舍楼和房间基础数据，仅应在首次部署或确认需要重置宿舍数据时执行。已有正式数据时不要重复运行。初始化完成后应删除或更换临时令牌。
 
 ### 3. scheduledMaintenance
 
@@ -186,10 +182,11 @@ cloudfunctions/weeklyQuotaMaintenance
 4. CloudBase 环境 ID 配置正确。
 5. 数据库集合和索引已创建。
 6. `api` 云函数已部署。
-7. 宿舍数据已初始化。
-8. 两个定时维护云函数已部署。
-9. `scheduledMaintenance` 的定时触发器已上传并启用。
-10. `weeklyQuotaMaintenance` 的定时触发器已上传并启用。
+7. `initDormData` 云函数已部署并完成一次宿舍数据初始化。
+8. `scheduledMaintenance` 云函数已部署。
+9. `weeklyQuotaMaintenance` 云函数已部署。
+10. `scheduledMaintenance` 的定时触发器已上传并启用。
+11. `weeklyQuotaMaintenance` 的定时触发器已上传并启用。
 
 完成后在微信开发者工具中点击“编译”。
 
