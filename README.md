@@ -1,4 +1,4 @@
-# 宿舍楼内互助取送平台
+# 宿舍楼内互助取送平台安装部署说明
 
 ## 一、项目简介
 
@@ -6,6 +6,8 @@
 - 项目形态：微信小程序
 - 项目用于同一宿舍楼用户发布、接取和完成取送需求。
 - 系统包含普通用户、楼栋管理员和超级管理员功能。
+
+本说明面向具备 Node.js、npm 和微信开发者工具基本使用经验的开发人员。
 
 ## 二、技术栈
 
@@ -63,7 +65,7 @@ miniapp/src/config/cloudbase.js
 
 在项目目录执行：
 
-```powershell
+```bash
 cd miniapp
 npm.cmd install
 npm.cmd run build:mp-weixin
@@ -101,7 +103,9 @@ miniapp/dist/build/mp-weixin
 
 集合需要在 CloudBase 控制台中创建，字段会在云函数写入数据时自动生成。`systemRules` 可以保持为空，程序会使用默认规则。
 
-`systemRules`、`announcements`、`weeklyQuotaRecords` 等核心集合的数据权限应设置为“所有用户不可读写”，小程序通过云函数访问数据。数据库索引按照 [CloudBase 部署与索引配置](docs/cloudbase-phase4-setup.md) 创建，不要删除已有集合和已有索引。
+数据库集合权限按照 [`docs/CloudBase部署与索引配置.md`](docs/CloudBase部署与索引配置.md) 设置。核心业务集合由云函数统一访问，不允许小程序客户端直接写入。
+
+数据库索引按照 [`docs/CloudBase部署与索引配置.md`](docs/CloudBase部署与索引配置.md) 中的索引清单创建，不要删除已有集合和已有索引。
 
 ## 九、云函数部署
 
@@ -132,7 +136,7 @@ cloudfunctions/initDormData
 }
 ```
 
-该函数会重建宿舍楼和房间基础数据。已初始化过宿舍数据时不要重复执行，初始化完成后应删除或更换临时令牌。
+> **注意：** `initDormData` 只应在首次部署或确认需要重建宿舍数据时执行。已有正式宿舍数据时不要重复运行。初始化完成后应删除或更换临时令牌。
 
 ### 3. scheduledMaintenance
 
@@ -158,9 +162,9 @@ cloudfunctions/weeklyQuotaMaintenance
 
 ### scheduledMaintenance
 
-- 自动处理过期待接订单。
-- 自动结算投诉期结束且无投诉的贡献值。
-- 使用该云函数 `config.json` 中配置的执行周期。
+- 自动处理已超过接单期限的待接订单。
+- 自动结算投诉期结束且没有投诉的配送奖励。
+- 执行周期由该云函数的 `config.json` 配置。
 
 ### weeklyQuotaMaintenance
 
@@ -184,7 +188,8 @@ cloudfunctions/weeklyQuotaMaintenance
 6. `api` 云函数已部署。
 7. 宿舍数据已初始化。
 8. 两个定时维护云函数已部署。
-9. 两个触发器已上传。
+9. `scheduledMaintenance` 的定时触发器已上传并启用。
+10. `weeklyQuotaMaintenance` 的定时触发器已上传并启用。
 
 完成后在微信开发者工具中点击“编译”。
 
@@ -192,7 +197,7 @@ cloudfunctions/weeklyQuotaMaintenance
 
 前端代码修改后执行：
 
-```powershell
+```bash
 cd miniapp
 npm.cmd run build:mp-weixin
 ```
@@ -229,3 +234,7 @@ npm.cmd run build:mp-weixin
 ### 6. 页面显示空白或接口失败
 
 查看微信开发者工具控制台和云函数日志，确认集合、索引和云函数部署完整。
+
+### 7. 修改角色后页面仍显示旧角色
+
+退出当前账号并重新进入小程序，确保前端重新调用云函数读取最新用户角色；必要时清除微信开发者工具缓存后重新编译。
