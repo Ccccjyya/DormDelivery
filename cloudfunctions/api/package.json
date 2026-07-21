@@ -1,0 +1,11 @@
+{
+  "name": "dormdelivery-cloud-api",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "node tests/order-number.test.js && node tests/phase4.test.js"
+  },
+  "dependencies": {
+    "wx-server-sdk": "^3.0.1"
+  }
+}

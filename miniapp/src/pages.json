@@ -1,0 +1,53 @@
+{
+  "pages": [
+    { "path": "pages/login/index", "style": { "navigationBarTitleText": "登录" } },
+    { "path": "pages/register/index", "style": { "navigationBarTitleText": "注册" } },
+    { "path": "pages/home/index", "style": { "navigationBarTitleText": "可接订单" } },
+    { "path": "pages/order-create/index", "style": { "navigationBarTitleText": "发布订单" } },
+    { "path": "pages/order-detail/index", "style": { "navigationBarTitleText": "订单详情", "enablePullDownRefresh": true } },
+    { "path": "pages/my-published-orders/index", "style": { "navigationBarTitleText": "我的发单", "enablePullDownRefresh": true } },
+    { "path": "pages/my-received-orders/index", "style": { "navigationBarTitleText": "我的接单", "enablePullDownRefresh": true } },
+    { "path": "pages/complaint-create/index", "style": { "navigationBarTitleText": "提交投诉" } },
+    { "path": "pages/my-complaints/index", "style": { "navigationBarTitleText": "我的投诉", "enablePullDownRefresh": true } },
+    { "path": "pages/complaint-detail/index", "style": { "navigationBarTitleText": "投诉详情", "enablePullDownRefresh": true } },
+    { "path": "pages/profile/index", "style": { "navigationBarTitleText": "个人中心" } },
+    { "path": "pages/profile-edit/index", "style": { "navigationBarTitleText": "编辑资料" } },
+    { "path": "pages/contribution-records/index", "style": { "navigationBarTitleText": "贡献值记录", "enablePullDownRefresh": true } },
+    { "path": "pages/quota-records/index", "style": { "navigationBarTitleText": "发单次数记录" } },
+    { "path": "pages/announcements/index", "style": { "navigationBarTitleText": "公告", "enablePullDownRefresh": true } },
+    { "path": "pages/announcement-detail/index", "style": { "navigationBarTitleText": "公告详情" } },
+    { "path": "pages-super/dashboard/index", "style": { "navigationBarTitleText": "管理中心" } },
+    { "path": "pages-super/rule-management/index", "style": { "navigationBarTitleText": "规则管理" } },
+    { "path": "pages-super/admin-management/index", "style": { "navigationBarTitleText": "管理员管理", "enablePullDownRefresh": true } },
+    { "path": "pages-super/account-management/index", "style": { "navigationBarTitleText": "账号管理", "enablePullDownRefresh": true } },
+    { "path": "pages-super/announcement-management/index", "style": { "navigationBarTitleText": "公告管理", "enablePullDownRefresh": true } },
+    { "path": "pages-super/contribution-rules/index", "style": { "navigationBarTitleText": "贡献值规则" } },
+    { "path": "pages-super/quota-rules/index", "style": { "navigationBarTitleText": "发单次数规则" } },
+    { "path": "pages-super/reward-rule/index", "style": { "navigationBarTitleText": "配送奖励规则" } },
+    { "path": "pages-super/complaint-rule/index", "style": { "navigationBarTitleText": "投诉处罚规则" } },
+    { "path": "pages-super/inactivity-rule/index", "style": { "navigationBarTitleText": "连续无配送处罚规则" } },
+    { "path": "pages-super/audit-logs/index", "style": { "navigationBarTitleText": "操作记录", "enablePullDownRefresh": true } },
+    { "path": "pages-super/acceptance-stats/index", "style": { "navigationBarTitleText": "接单率统计", "enablePullDownRefresh": true } }
+  ],
+  "subPackages": [
+    {
+      "root": "pages-admin",
+      "pages": [
+        { "path": "order-list/index", "style": { "navigationBarTitleText": "订单管理", "enablePullDownRefresh": true } },
+        { "path": "order-detail/index", "style": { "navigationBarTitleText": "订单详情", "enablePullDownRefresh": true } },
+        { "path": "complaint-list/index", "style": { "navigationBarTitleText": "投诉审核", "enablePullDownRefresh": true } },
+        { "path": "complaint-detail/index", "style": { "navigationBarTitleText": "投诉详情", "enablePullDownRefresh": true } },
+        { "path": "user-list/index", "style": { "navigationBarTitleText": "用户资料管理", "enablePullDownRefresh": true } },
+        { "path": "user-detail/index", "style": { "navigationBarTitleText": "用户详情", "enablePullDownRefresh": true } },
+        { "path": "profile/index", "style": { "navigationBarTitleText": "管理中心" } },
+        { "path": "operation-records/index", "style": { "navigationBarTitleText": "我的业务操作记录", "enablePullDownRefresh": true } }
+      ]
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "DormDelivery",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f6f7f9"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "triggers": [
+    {
+      "name": "maintenance-every-10-minutes",
+      "type": "timer",
+      "config": "0 */10 * * * * *"
+    }
+  ]
+}

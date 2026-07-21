@@ -1,0 +1,3 @@
+<template><view class="page"><view v-if="item"><view class="title">{{ item.title }}</view><view class="muted published">{{ formatDateTime(item.publishedAt) }}</view><view class="card content">{{ item.content }}</view></view><view v-else class="empty">加载中…</view></view></template>
+<script setup>import { onLoad } from '@dcloudio/uni-app';import { ref } from 'vue';import { api } from '../../utils/request';import { formatDateTime } from '../../utils/orderDisplay';const item=ref(null);onLoad(async(options)=>{item.value=await api.announcementDetail(options.id)})</script>
+<style scoped>.published{margin-bottom:22rpx}.content{white-space:pre-wrap;line-height:1.8}</style>

@@ -1,0 +1,14 @@
+{
+  "name": "DormDelivery",
+  "appid": "__UNI__DORMDELIVERY",
+  "description": "宿舍楼内互助取送平台",
+  "versionName": "0.1.0",
+  "versionCode": "1",
+  "mp-weixin": {
+    "appid": "wx0c0dd3d61b08d773",
+    "setting": {
+      "urlCheck": false
+    },
+    "usingComponents": true
+  }
+}

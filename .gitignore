@@ -1,0 +1,12 @@
+node_modules/
+dist/
+unpackage/
+.env
+.env.*
+*.log
+*.zip
+project.private.config.json
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store
