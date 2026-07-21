@@ -1,5 +1,5 @@
 {
-  "appid": "wx0c0dd3d61b08d773",
+  "appid": "YOUR_MINIPROGRAM_APP_ID",
   "projectname": "DormDelivery-CloudBase",
   "description": "DormDelivery CloudBase migration workspace",
   "miniprogramRoot": "miniapp/dist/build/mp-weixin/",

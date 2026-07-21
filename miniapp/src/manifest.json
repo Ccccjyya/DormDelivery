@@ -5,7 +5,7 @@
   "versionName": "0.1.0",
   "versionCode": "1",
   "mp-weixin": {
-    "appid": "wx0c0dd3d61b08d773",
+    "appid": "YOUR_MINIPROGRAM_APP_ID",
     "setting": {
       "urlCheck": false
     },

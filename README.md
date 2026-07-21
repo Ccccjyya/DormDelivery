@@ -40,6 +40,8 @@ docs/                                  部署和数据库配置说明
 
 ## 五、项目配置
 
+公开仓库不保存真实项目标识，以下配置使用占位符。组员接入同一个微信小程序和 CloudBase 环境时，应填写项目成员共享的 AppID 和环境 ID；独立部署到新项目时，应填写新项目自己的配置。
+
 ### 1. 小程序 AppID
 
 配置文件：
@@ -49,6 +51,8 @@ project.config.json
 miniapp/src/manifest.json
 ```
 
+将上述文件中的 `YOUR_MINIPROGRAM_APP_ID` 替换为实际小程序 AppID，并同步修改 `miniapp/scripts/write-mp-project-config.cjs`，避免构建时重新写入占位符。这三个位置必须使用同一个 AppID。
+
 ### 2. CloudBase 环境 ID
 
 配置文件：
@@ -57,7 +61,7 @@ miniapp/src/manifest.json
 miniapp/src/config/cloudbase.js
 ```
 
-部署人员需要将 AppID 和 CloudBase 环境 ID 替换为自己的配置。项目不需要在代码中填写 AppSecret、SecretId 或 SecretKey。
+将其中的 `YOUR_CLOUDBASE_ENV_ID` 替换为实际 CloudBase 环境 ID。项目不需要在代码中填写 AppSecret、SecretId 或 SecretKey。
 
 ## 六、安装依赖和构建前端
 
