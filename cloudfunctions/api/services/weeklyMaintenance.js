@@ -51,7 +51,7 @@ function computeWeeklySettlement({ user, rules, completedDeliveryCount, rewarded
     overtimeDeliveryCount,
     oldPostingQuota,
     discardedPostingQuota: oldPostingQuota,
-    newPostingQuota: bandAfter.weeklyPostingQuota,
+    newPostingQuota: bandBefore.weeklyPostingQuota,
     newUserProtected,
     ruleSnapshot: ruleSnapshot(rules)
   };
