@@ -39,4 +39,12 @@ assert.ok(!request.includes("'admin.acceptanceStats'"), 'ADMIN 请求层不应�
 const adminProfile = fs.readFileSync(path.join(root, 'src/pages-admin/profile/index.vue'), 'utf8');
 assert.ok(!adminProfile.includes('接单率统计'), 'ADMIN 管理中心不应显示接单率统计');
 
+const auditLogs = fs.readFileSync(path.join(root, 'src/pages-super/audit-logs/index.vue'), 'utf8');
+for (const hiddenLabel of ['操作结果：', '修改前：', '修改后：', '操作人：']) {
+  assert.ok(!auditLogs.includes(hiddenLabel), `超级管理员操作记录不应显示: ${hiddenLabel}`);
+}
+for (const actionLabel of ['账号禁用', '账号启用', '任命管理员', '取消管理员', '创建公告', '编辑公告', '发布公告', '下架公告']) {
+  assert.ok(auditLogs.includes(actionLabel), `超级管理员操作记录缺少操作名称: ${actionLabel}`);
+}
+
 console.log('phase 4 frontend route checks passed');
