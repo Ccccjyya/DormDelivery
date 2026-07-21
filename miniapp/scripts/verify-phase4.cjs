@@ -46,5 +46,10 @@ for (const hiddenLabel of ['操作结果：', '修改前：', '修改后：', '�
 for (const actionLabel of ['账号禁用', '账号启用', '任命管理员', '取消管理员', '创建公告', '编辑公告', '发布公告', '下架公告']) {
   assert.ok(auditLogs.includes(actionLabel), `超级管理员操作记录缺少操作名称: ${actionLabel}`);
 }
+assert.ok(auditLogs.includes('formatShanghaiDateTime(item.createdAt)'), '超级管理员操作时间必须固定按北京时间显示');
+const adminOperationLogs = fs.readFileSync(path.join(root, 'src/pages-admin/operation-records/index.vue'), 'utf8');
+assert.ok(adminOperationLogs.includes('formatShanghaiDateTime(item.createdAt)'), '楼栋管理员操作时间必须固定按北京时间显示');
+const orderDisplay = fs.readFileSync(path.join(root, 'src/utils/orderDisplay.js'), 'utf8');
+assert.ok(orderDisplay.includes('export function formatShanghaiDateTime'), '时间工具缺少北京时间格式化函数');
 
 console.log('phase 4 frontend route checks passed');

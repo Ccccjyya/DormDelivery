@@ -12,7 +12,7 @@
         <text class="status">{{ targetLabel(item.targetType) }}</text>
       </view>
       <view v-for="line in displayLines(item)" :key="line" class="change-line">{{ line }}</view>
-      <view class="muted">操作时间：{{ formatDateTime(item.createdAt) }}</view>
+      <view class="muted">操作时间：{{ formatShanghaiDateTime(item.createdAt) }}</view>
       <button v-if="isOrderRecord(item)" class="record-link" @click="openOrder(item)">查看订单</button>
       <button v-else-if="isUserRecord(item)" class="record-link" @click="openUser(item)">查看学生信息</button>
     </view>
@@ -25,7 +25,7 @@
 import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { api } from '../../utils/request';
-import { formatDateTime } from '../../utils/orderDisplay';
+import { formatShanghaiDateTime } from '../../utils/orderDisplay';
 import { runPullDownRefresh } from '../../utils/pullDownRefresh';
 
 const items = ref([]);
