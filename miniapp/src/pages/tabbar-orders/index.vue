@@ -115,7 +115,7 @@ function formatOrder(order) {
     ...order,
     typeName: typeLabel[order.orderType] || '外卖',
     displayText: order.orderDetail || order.itemName,
-    routeFrom: isStation ? (order.itemName || '驿站') : '宿舍楼下',
+    routeFrom: order.itemName || (isStation ? '驿站' : '宿舍楼下'),
     routeTo: order.destinationLabel || pub.fullRoomLabel || '',
     statusText,
     statusClass,
@@ -127,7 +127,8 @@ function formatOrder(order) {
 
 function getTimerText(order) {
   if (order.withdrawn || order.status === 'COMPLETED' || order.status === 'EXPIRED') return '';
-  if (order.timeLimitMinutes >= 720) return '不限时';
+  const limit = order.status === 'DELIVERING' ? (order.deliveryLimitMinutes ?? order.timeLimitMinutes ?? 720) : (order.acceptLimitMinutes ?? order.timeLimitMinutes ?? 720);
+  if (limit >= 720) return '不限时';
   const deadline = order.status === 'WAITING' ? order.expiresAt : order.deliveryDeadline;
   if (!deadline) return '';
   const remaining = Math.floor((new Date(deadline).getTime() - now.value) / 1000);

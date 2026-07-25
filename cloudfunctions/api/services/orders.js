@@ -52,7 +52,8 @@ function imageIds(value) {
 function publicOrder(order) {
   if (!order) return null;
   return { id: order._id, orderNo: order.orderNo, orderType: order.orderType || 'takeout', publisherId: order.publisherId, receiverId: order.receiverId,
-    status: order.status, itemName: order.itemName, pickupAddress: order.pickupAddress, timeLimitMinutes: order.timeLimitMinutes,
+    status: order.status, itemName: order.itemName, pickupAddress: order.pickupAddress,
+    timeLimitMinutes: order.timeLimitMinutes, acceptLimitMinutes: order.acceptLimitMinutes ?? order.timeLimitMinutes ?? 720, deliveryLimitMinutes: order.deliveryLimitMinutes ?? order.timeLimitMinutes ?? 720,
     orderDetail: order.orderDetail || '', pickupMode: order.pickupMode || 'dorm', destinationLabel: order.destinationLabel || '',
     remark: order.remark || '', imageFileIds: order.imageFileIds || [], buildingId: order.buildingId, floorNo: order.floorNo,
     roomId: order.roomId, publisherSnapshot: order.publisherSnapshot, receiverSnapshot: order.receiverSnapshot || null,
@@ -100,7 +101,10 @@ async function create({ db, openid, data }) {
   const clientRequestId = cleanText(data.clientRequestId, '请求标识', 80);
   const itemName = cleanText(data.itemName, '物品信息', 100);
   const pickupAddress = '';
-  const timeLimitMinutes = [10, 20, 30, 60, 120, 720].includes(Number(data.timeLimitMinutes)) ? Number(data.timeLimitMinutes) : 720;
+  const validAcceptOptions = [5, 10, 15, 30, 60, 720];
+  const validDeliveryOptions = [10, 20, 30, 60, 120, 720];
+  const acceptLimitMinutes = validAcceptOptions.includes(Number(data.acceptLimitMinutes)) ? Number(data.acceptLimitMinutes) : 720;
+  const deliveryLimitMinutes = validDeliveryOptions.includes(Number(data.deliveryLimitMinutes)) ? Number(data.deliveryLimitMinutes) : 720;
   const remark = data.remark ? cleanText(data.remark, '备注', 500) : '';
   const orderType = ['takeout', 'package', 'grocery', 'printing'].includes(data.orderType) ? data.orderType : 'takeout';
   const orderDetail = data.orderDetail ? cleanText(data.orderDetail, '外卖信息', 300) : '';
@@ -129,9 +133,9 @@ async function create({ db, openid, data }) {
     const afterScore = beforeScore - contributionReward;
     const order = { orderNo, clientRequestId, orderType, orderDetail, pickupMode, destinationLabel,
       publisherId: user._id, publisherOpenid: user.openid, receiverId: null, receiverOpenid: null, status: 'WAITING', itemName,
-      pickupAddress, timeLimitMinutes, remark, imageFileIds, buildingId: user.dormSnapshot.buildingId, floorNo: user.dormSnapshot.floorNo,
+      pickupAddress, acceptLimitMinutes, deliveryLimitMinutes, remark, imageFileIds, buildingId: user.dormSnapshot.buildingId, floorNo: user.dormSnapshot.floorNo,
       roomId: user.dormSnapshot.roomId, publisherSnapshot: snapshot(user), receiverSnapshot: {}, createdAt: now, updatedAt: now,
-      expiresAt: new Date(now.getTime() + timeLimitMinutes * 60000), acceptedAt: null, deliveryDeadline: null, completedAt: null,
+      expiresAt: new Date(now.getTime() + acceptLimitMinutes * 60000), acceptedAt: null, deliveryDeadline: null, completedAt: null,
       expiredAt: null, overdue: false, deliveryOverdue: false, rewardEligible: null, rewardStatus: 'NONE',
       rewardAmount: contributionReward, penaltyAmount: rules.upheldComplaintPenalty, rewardPolicyVersion: rules.version,
       everAccepted: false, offShelfType: 'NONE', offShelfAt: null, offShelfBy: null, offShelfByRole: null,
@@ -195,7 +199,7 @@ async function accept({ db, openid, data }) {
     await tx.collection('orders').doc(order._id).update({ data: { receiverId: user._id, receiverOpenid: user.openid,
       receiverSnapshot: db.command.set(receiverSnapshot),
       status: 'DELIVERING', everAccepted: true, acceptedAt: now,
-      rewardPolicyVersion: rules.version, deliveryDeadline: new Date(now.getTime() + order.timeLimitMinutes * 60000),
+      rewardPolicyVersion: rules.version, deliveryDeadline: new Date(now.getTime() + (order.deliveryLimitMinutes ?? order.timeLimitMinutes ?? 720) * 60000),
       updatedAt: now, version: (order.version || 0) + 1 } });
     await log(tx, order._id, user, 'ACCEPT', '接取订单'); return ok({ orderId: order._id });
   });

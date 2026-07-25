@@ -27,8 +27,8 @@
         <text class="ii-val orange">{{ order.rewardAmount || 0 }}</text>
       </view>
       <view class="info-item">
-        <text class="ii-label">时限</text>
-        <text class="ii-val">{{ order.timeLimitMinutes >= 720 ? '不限时' : order.timeLimitMinutes + '分钟' }}</text>
+        <text class="ii-label">{{ order.status === 'WAITING' ? '接单时限' : '配送时限' }}</text>
+        <text class="ii-val">{{ formatLimit(getCurrentLimit(order)) }}</text>
       </view>
       <view class="info-item">
         <text class="ii-label">发布时间</text>
@@ -74,6 +74,7 @@
     </view>
 
     <view class="actions">
+      <button class="act-btn primary" v-if="canAccept" @click="accept">接单</button>
       <button class="act-btn chat" v-if="showChat" @click="openChat">💬 私聊</button>
       <button class="act-btn primary" v-if="canComplete" @click="complete">完成配送</button>
       <button class="act-btn danger" v-if="canWithdraw" @click="expire">下架订单</button>
@@ -113,6 +114,19 @@ function formatTime(t) {
   return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
 }
 
+function getCurrentLimit(o) {
+  if (o.status === 'DELIVERING') {
+    return o.deliveryLimitMinutes ?? o.timeLimitMinutes ?? 720;
+  }
+  return o.acceptLimitMinutes ?? o.timeLimitMinutes ?? 720;
+}
+
+function formatLimit(min) {
+  if (!min || min >= 720) return '不限时';
+  if (min >= 60) return Math.floor(min / 60) + '小时' + (min % 60 ? min % 60 + '分钟' : '');
+  return min + '分钟';
+}
+
 const canAccept = ref(false);
 const canComplete = ref(false);
 const canWithdraw = ref(false);
@@ -132,7 +146,7 @@ function updateButtons() {
 function updateTimer() {
   const o = order.value;
   if (!o || o.withdrawn || o.status === 'COMPLETED' || o.status === 'EXPIRED') { timerText.value = ''; return; }
-  if (o.timeLimitMinutes >= 720) { timerText.value = '不限时'; return; }
+  if (getCurrentLimit(o) >= 720) { timerText.value = '不限时'; return; }
   const dl = o.status === 'WAITING' ? o.expiresAt : o.deliveryDeadline;
   if (!dl) return;
   const r = Math.floor((new Date(dl).getTime() - Date.now()) / 1000);
@@ -161,7 +175,7 @@ async function load() {
   if (o) {
     const pub = o.publisherSnapshot || {};
     const isStation = o.pickupMode === 'station';
-    routeFrom.value = isStation ? (o.itemName || '驿站') : '宿舍楼下';
+    routeFrom.value = o.itemName || (isStation ? '驿站' : '宿舍楼下');
     routeTo.value = o.destinationLabel || pub.fullRoomLabel || '';
     updateTimer();
     updateButtons();
@@ -240,8 +254,8 @@ function confirmThen(content, action) {
 .pg-img { width: 200rpx; height: 200rpx; border-radius: 14rpx; background: #f0f0f0; }
 
 /* 操作按钮 */
-.actions { display: flex; flex-direction: column; gap: 16rpx; margin-bottom: 40rpx; }
-.act-btn { height: 88rpx; line-height: 88rpx; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; text-align: center; border: none; }
+.actions { display: flex; flex-direction: column; gap: 16rpx; margin-bottom: 40rpx; padding: 0 24rpx; }
+.act-btn { width: 100%; height: 88rpx; line-height: 88rpx; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; text-align: center; border: none; display: block; }
 .act-btn::after { border: none; }
 .act-btn.chat { background: #fff; color: #3E9BF0; border: 1rpx solid #3E9BF0; }
 .act-btn.primary { background: #3E9BF0; color: #fff; }

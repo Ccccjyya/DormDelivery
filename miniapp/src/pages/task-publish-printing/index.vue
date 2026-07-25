@@ -53,9 +53,16 @@
       </view>
 
       <view class="form-item">
-        <view class="form-label">完成时限</view>
-        <picker :value="timeLimitIndex" :range="timeLimitOptions" @change="onTimeLimitChange">
-          <view class="form-picker">{{ timeLimitOptions[timeLimitIndex] }}</view>
+        <view class="form-label">接单时限</view>
+        <picker :value="acceptLimitIndex" :range="acceptLimitOptions" @change="onAcceptLimitChange">
+          <view class="form-picker">{{ acceptLimitOptions[acceptLimitIndex] }}</view>
+        </picker>
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">配送时限</view>
+        <picker :value="deliveryLimitIndex" :range="deliveryLimitOptions" @change="onDeliveryLimitChange">
+          <view class="form-picker">{{ deliveryLimitOptions[deliveryLimitIndex] }}</view>
         </picker>
       </view>
     </view>
@@ -74,8 +81,10 @@ const contributionBalance = profile.contributionScore ?? 60;
 const rewardOptions = [3, 5, 8, 10, 15];
 const showCustomInput = ref(false);
 
-const timeLimitOptions = ['10分钟', '20分钟', '30分钟', '1小时', '2小时', '不限时'];
-const timeLimitIndex = ref(1);
+const acceptLimitOptions = ['5分钟', '10分钟', '15分钟', '30分钟', '1小时', '不限时'];
+const acceptLimitIndex = ref(2);
+const deliveryLimitOptions = ['10分钟', '20分钟', '30分钟', '1小时', '2小时', '不限时'];
+const deliveryLimitIndex = ref(1);
 
 const form = reactive({
   itemName: '',
@@ -84,9 +93,8 @@ const form = reactive({
   remark: ''
 });
 
-function onTimeLimitChange(e) {
-  timeLimitIndex.value = e.detail.value;
-}
+function onAcceptLimitChange(e) { acceptLimitIndex.value = e.detail.value; }
+function onDeliveryLimitChange(e) { deliveryLimitIndex.value = e.detail.value; }
 
 function generateId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -111,7 +119,8 @@ async function handleSubmit() {
       remark,
       contributionReward: form.contributionReward,
       imageFileIds: [],
-      timeLimitMinutes: [10, 20, 30, 60, 120, 720][timeLimitIndex.value] || 720
+      acceptLimitMinutes: [5, 10, 15, 30, 60, 720][acceptLimitIndex.value] || 720,
+      deliveryLimitMinutes: [10, 20, 30, 60, 120, 720][deliveryLimitIndex.value] || 720
     });
     if (result?.orderId) {
       uni.showToast({ title: '发布成功', icon: 'success' });

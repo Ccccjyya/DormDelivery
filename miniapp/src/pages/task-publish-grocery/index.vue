@@ -14,8 +14,8 @@
           v-for="cat in categories"
           :key="cat.key"
           class="cat-item"
-          :class="{ active: activeCat === cat.key }"
-          @click="activeCat = cat.key"
+          :class="{ active: !isSearching && activeCat === cat.key }"
+          @click="selectCategory(cat.key)"
         >
           <text class="cat-name">{{ cat.name }}</text>
         </view>
@@ -60,12 +60,38 @@
       </view>
     </view>
 
-    <view class="bottom-bar">
+    <view class="bottom-bar" @click="showCart = true">
       <view class="bb-info">
         <text class="bb-amount">¥{{ totalAmount.toFixed(2) }}</text>
         <text class="bb-count">已选 {{ totalCount }} 件</text>
       </view>
-      <text class="bb-btn" :class="{ active: totalCount > 0 }" @click="goPublish">{{ totalCount > 0 ? '去发单' : '未选购商品' }}</text>
+      <text class="bb-btn" @click.stop="totalCount > 0 ? showCart = true : null" :class="{ active: totalCount > 0 }">{{ totalCount > 0 ? '查看购物车' : '未选购商品' }}</text>
+    </view>
+
+    <view class="cart-mask" v-if="showCart" @click="showCart = false">
+      <view class="cart-panel" @click.stop>
+        <view class="cart-title">购物车</view>
+        <view v-if="cartItems.length === 0" class="cart-empty">暂无商品</view>
+        <view v-else class="cart-list">
+          <view v-for="ci in cartItems" :key="ci._id" class="cart-row">
+            <image v-if="ci._img" :src="ci._img" class="cart-img" mode="aspectFill" />
+            <view v-else class="cart-img-place"></view>
+            <view class="cart-info">
+              <text class="cart-name">{{ ci.name }}</text>
+              <text class="cart-unit">¥{{ ci.price }}</text>
+            </view>
+            <view class="cart-qty">
+              <view class="qty-btn" @click="decQty(ci)">−</view>
+              <text class="qty-num">{{ cart[ci._id] }}</text>
+              <view class="qty-btn" @click="incQty(ci)">+</view>
+            </view>
+          </view>
+        </view>
+        <view class="cart-footer">
+          <text class="cart-total">合计 ¥{{ totalAmount.toFixed(2) }}</text>
+          <view v-if="totalCount > 0" class="cart-go" @click="goPublishFromCart">去发单</view>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -98,6 +124,7 @@ const cart = ref({});
 const loaded = ref(false);
 const searching = ref(false);
 const keyword = ref('');
+const showCart = ref(false);
 
 const store = useUserStore();
 
@@ -145,16 +172,21 @@ const activeSubcats = computed(() => {
 });
 
 const filteredProducts = computed(() => {
-  let list = allProducts.value;
   if (keyword.value) {
-    const kw = keyword.value;
-    list = list.filter(p => String(p.name || '').includes(kw));
-  } else {
-    list = list.filter(p => p.category === activeCat.value);
-    if (activeSub.value !== '全部') list = list.filter(p => p.sub === activeSub.value);
+    return allProducts.value.filter(p => String(p.name || '').includes(keyword.value));
   }
+  let list = allProducts.value.filter(p => p.category === activeCat.value);
+  if (activeSub.value !== '全部') list = list.filter(p => p.sub === activeSub.value);
   return list;
 });
+
+const isSearching = computed(() => Boolean(keyword.value));
+
+function selectCategory(key) {
+  keyword.value = '';
+  activeCat.value = key;
+  activeSub.value = '全部';
+}
 
 const totalCount = computed(() => Object.values(cart.value).reduce((a, b) => a + b, 0));
 const totalAmount = computed(() => {
@@ -174,9 +206,17 @@ function decQty(p) {
 
 function goPublish() {
   if (totalCount.value === 0) return;
-  const items = allProducts.value.filter(p => cart.value[p._id]).map(p => p.name + ' x' + cart.value[p._id]);
-  uni.navigateTo({ url: '/pages/task-publish/index?type=grocery&items=' + encodeURIComponent(items.join('\n')) });
+  const sel = allProducts.value.filter(p => cart.value[p._id]);
+  const names = {};
+  const prices = {};
+  const imgs = {};
+  sel.forEach(p => { names[p._id] = p.name; prices[p._id] = p.price; imgs[p._id] = p._img || p.imageFileId || ''; });
+  uni.setStorageSync('groceryCart', { cart: cart.value, names, prices, imgs });
+  uni.navigateTo({ url: '/pages/task-publish/index?type=grocery' });
 }
+function goPublishFromCart() { showCart.value = false; goPublish(); }
+
+const cartItems = computed(() => allProducts.value.filter(p => cart.value[p._id]));
 
 function onSearchClick() { searching.value = true; }
 function closeSearch() { if (!keyword.value) searching.value = false; }
@@ -228,4 +268,20 @@ watch(activeCat, () => { activeSub.value = '全部'; });
 .bb-count { font-size: 22rpx; color: #8AA3B8; display: block; margin-top: 4rpx; }
 .bb-btn { flex-shrink: 0; background: #E0E0E0; color: #999; padding: 18rpx 40rpx; border-radius: 40rpx; font-size: 28rpx; }
 .bb-btn.active { background: #3E9BF0; color: #fff; }
+
+.cart-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: flex; align-items: flex-end; }
+.cart-panel { width: 100%; background: #fff; border-radius: 24rpx 24rpx 0 0; padding: 32rpx; max-height: 65vh; display: flex; flex-direction: column; box-sizing: border-box; }
+.cart-title { font-size: 34rpx; font-weight: 700; color: #2A4257; text-align: center; margin-bottom: 20rpx; }
+.cart-empty { text-align: center; padding: 60rpx 0; color: #B0B0B0; }
+.cart-list { flex: 1; overflow-y: auto; margin-bottom: 20rpx; display: flex; flex-direction: column; gap: 12rpx; }
+.cart-row { display: flex; align-items: center; gap: 16rpx; padding: 12rpx 0; border-bottom: 1rpx solid #F0F0F0; }
+.cart-img { width: 100rpx; height: 100rpx; border-radius: 10rpx; background: #F5F6F8; flex-shrink: 0; }
+.cart-img-place { width: 100rpx; height: 100rpx; border-radius: 10rpx; background: #F5F6F8; flex-shrink: 0; }
+.cart-qty { flex-shrink: 0; display: flex; flex-direction: row; align-items: center; gap: 16rpx; }
+.cart-info { flex: 1; min-width: 0; }
+.cart-name { font-size: 26rpx; color: #2A4257; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.cart-unit { font-size: 26rpx; color: #FF7043; font-weight: 600; margin-top: 6rpx; display: block; }
+.cart-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 16rpx; border-top: 1rpx solid #F0F0F0; }
+.cart-total { font-size: 32rpx; font-weight: 700; color: #333; }
+.cart-go { background: #3E9BF0; color: #fff; padding: 16rpx 40rpx; border-radius: 40rpx; font-size: 28rpx; }
 </style>

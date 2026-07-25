@@ -141,7 +141,8 @@ const typeLabel = { takeout: '外卖', package: '快递', grocery: '帮买', pri
 
 function getTimerText(order) {
   if (order.withdrawn || order.status === 'COMPLETED' || order.status === 'EXPIRED') return '';
-  if (order.timeLimitMinutes >= 720) return '不限时';
+  const limit = order.status === 'DELIVERING' ? (order.deliveryLimitMinutes ?? order.timeLimitMinutes ?? 720) : (order.acceptLimitMinutes ?? order.timeLimitMinutes ?? 720);
+  if (limit >= 720) return '不限时';
   const ts = now.value;
   const deadline = order.status === 'WAITING' ? order.expiresAt : order.deliveryDeadline;
   if (!deadline) return '';
@@ -213,7 +214,7 @@ async function fetchOrders() {
       return {
         typeName: { takeout: '外卖', package: '快递', grocery: '帮买', printing: '打印' }[order.orderType] || '外卖',
         displayText: order.orderDetail || order.itemName,
-        routeFrom: isStation ? (order.itemName || '驿站') : '宿舍楼下',
+        routeFrom: order.itemName || (isStation ? '驿站' : '宿舍楼下'),
         routeTo: order.destinationLabel || pub.fullRoomLabel || '',
         statusText: '待接单',
         statusClass: 'waiting',
@@ -242,7 +243,8 @@ function updateTimers() {
   availableOrders.value = availableOrders.value.map(function(o) {
     let txt = '', cls = '';
     if (!o.withdrawn && o.status !== 'COMPLETED' && o.status !== 'EXPIRED') {
-      if (o.timeLimitMinutes >= 720) {
+      const limit = o.status === 'DELIVERING' ? (o.deliveryLimitMinutes ?? o.timeLimitMinutes ?? 720) : (o.acceptLimitMinutes ?? o.timeLimitMinutes ?? 720);
+      if (limit >= 720) {
         txt = '不限时';
       } else {
         const dl = o.status === 'WAITING' ? o.expiresAt : o.deliveryDeadline;
