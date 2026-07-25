@@ -37,7 +37,8 @@
     { "path": "pages-super/complaint-rule/index", "style": { "navigationBarTitleText": "投诉处罚规则" } },
     { "path": "pages-super/inactivity-rule/index", "style": { "navigationBarTitleText": "连续无配送处罚规则" } },
     { "path": "pages-super/audit-logs/index", "style": { "navigationBarTitleText": "操作记录", "enablePullDownRefresh": true } },
-    { "path": "pages-super/acceptance-stats/index", "style": { "navigationBarTitleText": "接单率统计", "enablePullDownRefresh": true } }
+    { "path": "pages-super/acceptance-stats/index", "style": { "navigationBarTitleText": "接单率统计", "enablePullDownRefresh": true } },
+    { "path": "pages-super/grocery-products/index", "style": { "navigationBarTitleText": "商品管理", "enablePullDownRefresh": true } }
   ],
   "subPackages": [
     {

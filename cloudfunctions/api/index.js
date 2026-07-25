@@ -57,6 +57,8 @@ exports.main = async (event = {}) => {
     if (event.action === 'contribution.mine') return await complaints.recordList(context);
     if (event.action === 'reward.settleOrder') return await complaints.settleOrder(context);
     if (event.action === 'reward.settleEligibleBatch') return await complaints.settleEligibleBatchAction(context);
+    if (event.action === 'grocery.catList') return await superAdmin.groceryCatListPublic(context);
+    if (event.action === 'grocery.productList') return await superAdmin.groceryProductListPublic(context);
     if (event.action === 'admin.userList') return await admin.userList(context);
     if (event.action === 'admin.userDetail') return await admin.userDetail(context);
     if (event.action === 'admin.updateUserProfile') return await admin.updateUserProfile(context);
@@ -77,6 +79,12 @@ exports.main = async (event = {}) => {
     if (event.action === 'announcement.detail') return await superAdmin.announcementDetail(context);
     if (event.action === 'super.operationLogs') return await superAdmin.operationLogs(context);
     if (event.action === 'super.acceptanceStats') return await superAdmin.acceptanceStats(context);
+    if (event.action === 'super.groceryCatList') return await superAdmin.groceryCatList(context);
+    if (event.action === 'super.groceryCatSave') return await superAdmin.groceryCatSave(context);
+    if (event.action === 'super.groceryCatDelete') return await superAdmin.groceryCatDelete(context);
+    if (event.action === 'super.groceryProductList') return await superAdmin.groceryProductList(context);
+    if (event.action === 'super.groceryProductSave') return await superAdmin.groceryProductSave(context);
+    if (event.action === 'super.groceryProductDelete') return await superAdmin.groceryProductDelete(context);
     if (event.action === 'weeklyQuota.mine') return await weeklyMaintenance.recordList(context);
 
     context.user = await currentUser(openid);

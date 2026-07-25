@@ -78,6 +78,17 @@
         </view>
       </view>
 
+      <view class="section" v-if="isAdmin || isSuperAdmin">
+        <view class="section-title">管理</view>
+        <view class="menu-card">
+          <view class="menu-item" @click.stop="goAdmin">
+            <view class="mi mi-admin"></view>
+            <text class="menu-text">管理中心</text>
+            <text class="menu-arrow">›</text>
+          </view>
+        </view>
+      </view>
+
       <view class="section">
         <view class="section-title">更多</view>
         <view class="menu-card">
@@ -106,6 +117,7 @@ import { runPullDownRefresh } from '../../utils/pullDownRefresh';
 import TabBar from '@/components/TabBar.vue';
 import StatusBar from '@/components/StatusBar.vue';
 import { useUserStore } from '@/stores/user';
+import { syncRoleSurface } from '../../utils/roleNavigation';
 
 const userStore = useUserStore();
 const userInfo = ref({
@@ -115,6 +127,8 @@ const userInfo = ref({
   remainingOrders: 3,
   level: 1
 });
+const isAdmin = ref(false);
+const isSuperAdmin = ref(false);
 
 onShow(async () => {
   await userStore.fetchMe();
@@ -127,6 +141,8 @@ onShow(async () => {
       remainingOrders: p.remainingWeeklyQuota ?? 3,
       level: Math.floor((p.contributionScore || 0) / 100) + 1
     };
+    isAdmin.value = p.role === 'ADMIN';
+    isSuperAdmin.value = p.role === 'SUPER_ADMIN';
   }
 });
 
@@ -134,6 +150,14 @@ onPullDownRefresh(function(){ runPullDownRefresh(async function(){ uni.showLoadi
 
 function goEdit() { uni.navigateTo({ url: '/pages/profile-edit/index' }); }
 function navigateTo(url) { uni.navigateTo({ url }); }
+function goAdmin() {
+  uni.navigateTo({
+    url: '/pages-admin/profile/index',
+    fail: (err) => {
+      uni.showToast({ title: '子包加载中，请稍后重试', icon: 'none' });
+    }
+  });
+}
 function logout() {
   uni.showModal({
     title: '退出登录',
@@ -172,7 +196,7 @@ function logout() {
 .edit-btn { display: flex; align-items: center; gap: 6rpx; font-size: 24rpx; color: #fff; background: rgba(255,255,255,0.25); padding: 10rpx 18rpx; border-radius: 22rpx; }
 .edit-icon { width: 18rpx; height: 18rpx; border: 2rpx solid #fff; border-radius: 2rpx; }
 
-.page-body { padding-top: 280rpx; padding-bottom: 180rpx; }
+.page-body { padding-top: 280rpx; padding-bottom: 200rpx; }
 
 .stats-row { display: flex; gap: 16rpx; padding: 0 32rpx; margin-bottom: 32rpx; }
 .stat-card { flex: 1; background: #fff; border-radius: 20rpx; padding: 20rpx 12rpx; text-align: center; border: 1rpx solid #E3F1FD; box-shadow: 0 4rpx 16rpx rgba(62,155,240,0.05); display: flex; flex-direction: column; align-items: center; gap: 4rpx; }
@@ -198,6 +222,7 @@ function logout() {
 .mi-star { background: #C5E1FF; }
 .mi-plus { background: #B3E5FC; }
 .mi-bell { background: #FFE082; }
+.mi-admin { background: #3E9BF0; }
 .menu-text { flex: 1; font-size: 30rpx; color: #2A4257; }
 .logout-text { color: #E57373; font-weight: 500; }
 .menu-arrow { font-size: 32rpx; color: #C0C0C0; }

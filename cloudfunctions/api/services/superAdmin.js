@@ -219,5 +219,71 @@ async function acceptanceStats({ db, openid, data }) {
   return ok({ ...calculateAcceptanceStats(periodOrders, now), periodStart, periodEnd: now, period, scope: 'GLOBAL' });
 }
 
+// 便利店公开接口（不需要角色验证，供商城页使用）
+async function groceryCatListPublic({ db }) {
+  const res = await db.collection('groceryCategories').orderBy('createdAt', 'asc').get();
+  return ok({ items: res.data });
+}
+async function groceryProductListPublic({ db, data }) {
+  let q = db.collection('groceryProducts').orderBy('createdAt', 'desc');
+  if (data?.category) q = q.where({ category: data.category });
+  const res = await q.get();
+  return ok({ items: res.data });
+}
+
+// 便利店分类管理
+async function groceryCatList({ db, openid }) {
+  await superUser(db, openid);
+  const res = await db.collection('groceryCategories').orderBy('createdAt', 'asc').get();
+  return ok({ items: res.data });
+}
+async function groceryCatSave({ db, openid, data }) {
+  await superUser(db, openid);
+  const { id, name, subs: _subs } = data || {};
+  const subs = (Array.isArray(_subs) ? _subs : String(_subs || '').split(/[,，]/).map(s => s.trim()).filter(Boolean));
+  if (!(name || '').trim()) return fail('VALIDATION_ERROR', '请输入分类名');
+  const doc = { name: name.trim(), subs, updatedAt: new Date() };
+  if (id) { await db.collection('groceryCategories').doc(id).update({ data: doc }); return ok({ id }); }
+  doc.key = 'cat_' + Date.now(); doc.createdAt = new Date();
+  const added = await db.collection('groceryCategories').add({ data: doc });
+  return ok({ id: added._id });
+}
+async function groceryCatDelete({ db, openid, data }) {
+  await superUser(db, openid);
+  await db.collection('groceryCategories').doc(data.id).remove();
+  return ok({});
+}
+
+// 便利店商品管理
+async function groceryProductList({ db, openid, data }) {
+  await superUser(db, openid);
+  let q = db.collection('groceryProducts').orderBy('createdAt', 'desc');
+  if (data?.category) q = q.where({ category: data.category });
+  const res = await q.get();
+  return ok({ items: res.data });
+}
+async function groceryProductSave({ db, openid, data }) {
+  await superUser(db, openid);
+  const { id, name, price, imageFileId, category, categoryName, sub, subName } = data || {};
+  if (!(name || '').trim()) return fail('VALIDATION_ERROR', '请输入商品名');
+  if (!category) return fail('VALIDATION_ERROR', '请选择分类');
+  const numPrice = Number(price);
+  if (!numPrice || numPrice <= 0) return fail('VALIDATION_ERROR', '请输入有效价格');
+  const doc = { name: name.trim(), price: numPrice, imageFileId: imageFileId || '', category, categoryName: categoryName || '',
+    sub: sub || '', subName: subName || '全部', updatedAt: new Date() };
+  if (id) { await db.collection('groceryProducts').doc(id).update({ data: doc }); return ok({ id }); }
+  doc.createdAt = new Date();
+  const added = await db.collection('groceryProducts').add({ data: doc });
+  return ok({ id: added._id });
+}
+async function groceryProductDelete({ db, openid, data }) {
+  await superUser(db, openid);
+  await db.collection('groceryProducts').doc(data.id).remove();
+  return ok({});
+}
+
 module.exports = { ruleGet, ruleUpdate, accountList, setAccountStatus, setAdminRole, announcementSave, announcementOffline,
-  announcementAdminList, announcementPublicList, announcementDetail, operationLogs, acceptanceStats };
+  announcementAdminList, announcementPublicList, announcementDetail, operationLogs, acceptanceStats,
+  groceryCatList, groceryCatSave, groceryCatDelete,
+  groceryProductList, groceryProductSave, groceryProductDelete,
+  groceryCatListPublic, groceryProductListPublic };
