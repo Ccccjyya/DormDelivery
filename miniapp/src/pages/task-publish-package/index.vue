@@ -4,13 +4,13 @@
 
     <view class="form-section">
       <view class="form-item">
-        <view class="form-label">取件地点</view>
+        <view class="form-label">取件地点 <text class="label-hint">*必填</text></view>
         <input v-model="form.itemName" class="form-input" placeholder="如：菜鸟驿站/快递柜" />
       </view>
 
       <view class="form-item">
-        <view class="form-label">快递单号</view>
-        <input v-model="form.trackingNo" class="form-input" placeholder="请输入快递单号" />
+        <view class="form-label">取件码 <text class="label-hint">*必填</text></view>
+        <input v-model="form.trackingNo" class="form-input" placeholder="请输入取件码" />
       </view>
 
       <view class="form-item">
@@ -18,6 +18,11 @@
         <picker :value="timeLimitIndex" :range="timeLimitOptions" @change="onTimeLimitChange">
           <view class="form-picker">{{ timeLimitOptions[timeLimitIndex] }}</view>
         </picker>
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">任务描述 <text class="label-hint">*必填</text></view>
+        <textarea v-model="form.orderDetail" class="form-textarea" placeholder="如：包裹数量、大小、时间、其他要求等" />
       </view>
 
       <view class="form-item">
@@ -30,8 +35,8 @@
             v-for="val in rewardOptions"
             :key="val"
             class="reward-chip"
-            :class="{ active: form.contributionReward === val }"
-            @click="form.contributionReward = val"
+            :class="{ active: !showCustomInput && form.contributionReward === val }"
+            @click="selectReward(val)"
           >
             <text class="chip-num">{{ val }}</text>
             <text class="chip-label">分</text>
@@ -39,7 +44,7 @@
           <view
             class="reward-chip"
             :class="{ active: showCustomInput }"
-            @click="showCustomInput = true"
+            @click="selectCustom"
           >
             <text class="chip-num">自定义</text>
           </view>
@@ -53,11 +58,6 @@
           style="margin-top: 14rpx;"
         />
       </view>
-
-      <view class="form-item">
-        <view class="form-label">备注</view>
-        <textarea v-model="form.remark" class="form-textarea" placeholder="如：物品较重/到付……" />
-      </view>
     </view>
 
     <view class="submit-btn" @click="handleSubmit">发布订单</view>
@@ -67,7 +67,6 @@
 <script setup>
 import { ref, reactive } from 'vue';
 import { api } from '@/utils/request';
-import { useUserStore } from '@/stores/user';
 
 const profile = uni.getStorageSync('cloudProfile') || {};
 const contributionBalance = profile.contributionScore ?? 60;
@@ -80,12 +79,21 @@ const timeLimitIndex = ref(1);
 const form = reactive({
   itemName: '',
   trackingNo: '',
-  contributionReward: 5,
-  remark: ''
+  orderDetail: '',
+  contributionReward: 5
 });
 
 function onTimeLimitChange(e) {
   timeLimitIndex.value = e.detail.value;
+}
+
+function selectReward(val) {
+  showCustomInput.value = false;
+  form.contributionReward = val;
+}
+
+function selectCustom() {
+  showCustomInput.value = true;
 }
 
 function generateId() {
@@ -93,23 +101,29 @@ function generateId() {
 }
 
 async function handleSubmit() {
-  if (!(form.itemName || '').trim()) {
-    uni.showToast({ title: '请填写取件地点', icon: 'none' });
-    return;
-  }
   const itemName = (form.itemName || '').trim();
-  let remark = form.remark || '';
-  if (form.trackingNo) {
-    remark = '快递单号：' + form.trackingNo + (remark ? ' | ' + remark : '');
+  if (!itemName) return uni.showToast({ title: '请填写取件地点', icon: 'none' });
+
+  const trackingNo = (form.trackingNo || '').trim();
+  if (!trackingNo) return uni.showToast({ title: '请填写取件码', icon: 'none' });
+
+  const orderDetail = (form.orderDetail || '').trim();
+  if (!orderDetail) return uni.showToast({ title: '请填写任务描述', icon: 'none' });
+
+  const reward = Number(form.contributionReward);
+  if (!Number.isInteger(reward) || reward < 1 || reward > 30) {
+    return uni.showToast({ title: '贡献值投入须为1-30整数', icon: 'none' });
   }
+
   uni.showToast({ title: '发布中...', icon: 'loading' });
   try {
     const result = await api.createOrder({
       clientRequestId: generateId(),
       orderType: 'package',
       itemName,
-      remark,
-      contributionReward: form.contributionReward,
+      orderDetail,
+      remark: '取件码：' + trackingNo,
+      contributionReward: reward,
       imageFileIds: [],
       timeLimitMinutes: [10, 20, 30, 60, 120, 720][timeLimitIndex.value] || 720
     });
@@ -117,7 +131,9 @@ async function handleSubmit() {
       uni.showToast({ title: '发布成功', icon: 'success' });
       setTimeout(() => uni.navigateBack(), 800);
     }
-  } catch (e) {}
+  } catch (e) {
+    uni.hideLoading();
+  }
 }
 </script>
 
@@ -152,6 +168,12 @@ async function handleSubmit() {
   margin-bottom: 12rpx;
 }
 
+.label-hint {
+  font-size: 22rpx;
+  color: #8AA3B8;
+  font-weight: normal;
+}
+
 .form-input {
   width: 100%;
   height: 80rpx;
@@ -160,6 +182,7 @@ async function handleSubmit() {
   padding: 0 20rpx;
   font-size: 28rpx;
   border: none;
+  box-sizing: border-box;
 }
 
 .form-textarea {
@@ -170,6 +193,7 @@ async function handleSubmit() {
   padding: 20rpx;
   font-size: 28rpx;
   border: none;
+  box-sizing: border-box;
 }
 
 .form-picker {
@@ -180,6 +204,49 @@ async function handleSubmit() {
   padding: 0 20rpx;
   font-size: 28rpx;
   color: #333;
+}
+
+.reward-picker {
+  display: flex;
+  gap: 14rpx;
+  flex-wrap: wrap;
+}
+
+.reward-chip {
+  flex: 1;
+  min-width: 110rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rpx;
+  padding: 16rpx 0;
+  border-radius: 14rpx;
+  border: 2rpx solid #E3F1FD;
+  background: #f8f9fa;
+}
+
+.reward-chip.active {
+  background: #3E9BF0;
+  border-color: #3E9BF0;
+}
+
+.chip-num {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #2A4257;
+}
+
+.reward-chip.active .chip-num {
+  color: #fff;
+}
+
+.chip-label {
+  font-size: 22rpx;
+  color: #8AA3B8;
+}
+
+.reward-chip.active .chip-label {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .submit-btn {

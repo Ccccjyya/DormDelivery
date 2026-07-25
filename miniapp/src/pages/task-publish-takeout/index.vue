@@ -89,8 +89,8 @@
             v-for="val in rewardOptions"
             :key="val"
             class="reward-chip"
-            :class="{ active: form.contributionReward === val }"
-            @click="form.contributionReward = val"
+            :class="{ active: !showCustomInput && form.contributionReward === val }"
+            @click="selectReward(val)"
           >
             <text class="chip-num">{{ val }}</text>
             <text class="chip-label">分</text>
@@ -98,7 +98,7 @@
           <view
             class="reward-chip"
             :class="{ active: showCustomInput }"
-            @click="showCustomInput = true"
+            @click="selectCustom"
           >
             <text class="chip-num">自定义</text>
           </view>
@@ -195,6 +195,9 @@ function deletePhoto(idx) {
 function onTimeLimitChange(e) {
   timeLimitIndex.value = e.detail.value;
 }
+
+function selectReward(val) { showCustomInput.value = false; form.contributionReward = val; }
+function selectCustom() { showCustomInput.value = true; }
 
 function generateId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;

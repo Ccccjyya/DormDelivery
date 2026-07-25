@@ -78,14 +78,8 @@ function openPublish() {
 
 function handleSelect(type) {
   showSheet.value = false;
-  const pageMap = {
-    takeout: '/pages/task-publish-takeout/index',
-    package: '/pages/task-publish-package/index',
-    grocery: '/pages/task-publish-grocery/index',
-    printing: '/pages/task-publish-printing/index'
-  };
-  const url = pageMap[type];
-  if (url) uni.navigateTo({ url });
+  const url = `/pages/task-publish/index?type=${type}`;
+  uni.navigateTo({ url });
   emit('publish', type);
 }
 </script>
