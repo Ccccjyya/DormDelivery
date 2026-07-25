@@ -1,0 +1,88 @@
+{
+  "pages": [
+    "pages/login/index",
+    "pages/register/index",
+    "pages/tabbar-home/index",
+    "pages/tabbar-orders/index",
+    "pages/tabbar-messages/index",
+    "pages/tabbar-profile/index",
+    "pages/task-publish-takeout/index",
+    "pages/task-publish-package/index",
+    "pages/task-publish-grocery/index",
+    "pages/task-publish-printing/index",
+    "pages/message-chat/index",
+    "pages/chat/index",
+    "pages/home/index",
+    "pages/order-create/index",
+    "pages/order-detail/index",
+    "pages/my-published-orders/index",
+    "pages/my-received-orders/index",
+    "pages/complaint-create/index",
+    "pages/my-complaints/index",
+    "pages/complaint-detail/index",
+    "pages/profile/index",
+    "pages/profile-edit/index",
+    "pages/contribution-records/index",
+    "pages/quota-records/index",
+    "pages/announcements/index",
+    "pages/announcement-detail/index",
+    "pages-super/dashboard/index",
+    "pages-super/rule-management/index",
+    "pages-super/admin-management/index",
+    "pages-super/account-management/index",
+    "pages-super/announcement-management/index",
+    "pages-super/contribution-rules/index",
+    "pages-super/quota-rules/index",
+    "pages-super/reward-rule/index",
+    "pages-super/complaint-rule/index",
+    "pages-super/inactivity-rule/index",
+    "pages-super/audit-logs/index",
+    "pages-super/acceptance-stats/index"
+  ],
+  "subPackages": [
+    {
+      "root": "pages-admin",
+      "pages": [
+        "order-list/index",
+        "order-detail/index",
+        "complaint-list/index",
+        "complaint-detail/index",
+        "user-list/index",
+        "user-detail/index",
+        "profile/index",
+        "operation-records/index"
+      ]
+    }
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "DormDelivery",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f6f7f9"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#999999",
+    "selectedColor": "#3E9BF0",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/tabbar-home/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/tabbar-orders/index",
+        "text": "订单"
+      },
+      {
+        "pagePath": "pages/tabbar-messages/index",
+        "text": "消息"
+      },
+      {
+        "pagePath": "pages/tabbar-profile/index",
+        "text": "我的"
+      }
+    ]
+  },
+  "usingComponents": {}
+}

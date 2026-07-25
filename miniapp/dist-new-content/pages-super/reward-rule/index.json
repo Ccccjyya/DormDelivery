@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "配送奖励规则",
+  "usingComponents": {
+    "rule-editor": "../../shared/RuleEditor"
+  }
+}

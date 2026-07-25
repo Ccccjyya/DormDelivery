@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "投诉处罚规则",
+  "usingComponents": {
+    "rule-editor": "../../shared/RuleEditor"
+  }
+}

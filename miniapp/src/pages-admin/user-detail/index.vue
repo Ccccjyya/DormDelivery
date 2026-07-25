@@ -170,5 +170,5 @@ onPullDownRefresh(() => runPullDownRefresh(() => userId.value ? load() : undefin
 </script>
 
 <style scoped>
-.summary,.card{line-height:1.9}.section-title{font-weight:600;margin-bottom:14rpx}.field-label{font-size:26rpx;font-weight:600;margin:8rpx 0}.picker{padding:20rpx;margin-bottom:18rpx;background:#fff;border:1rpx solid #cfded9;border-radius:6px}.switch-row{display:flex;align-items:center;justify-content:space-between;margin:14rpx 0}.permission-button{margin-top:20rpx}
+.summary,.card{line-height:1.9}.section-title{font-weight:600;margin-bottom:14rpx}.field-label{font-size:26rpx;font-weight:600;margin:8rpx 0}.picker{padding:20rpx;margin-bottom:18rpx;background:#fff;border:1rpx solid #C9DFF2;border-radius:6px}.switch-row{display:flex;align-items:center;justify-content:space-between;margin:14rpx 0}.permission-button{margin-top:20rpx}
 </style>

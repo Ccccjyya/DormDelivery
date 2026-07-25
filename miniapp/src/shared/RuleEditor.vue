@@ -82,5 +82,5 @@ onShow(load);
 </script>
 
 <style scoped>
-.band-list{padding:12rpx 24rpx}.band-row{display:flex;align-items:center;justify-content:space-between;padding:16rpx 0;border-bottom:1rpx solid #e5efec}.band-row:last-child{border-bottom:0}.band-label{width:180rpx}.number-input{width:180rpx;height:68rpx;border:1px solid #cfded9;border-radius:6px;text-align:center}.field-label{font-weight:600;margin-bottom:14rpx}.input{margin-bottom:0}.error-state{text-align:center;color:#b42318;padding:70rpx 0}.retry{width:220rpx;margin-top:20rpx;font-size:26rpx}
+.band-list{padding:12rpx 24rpx}.band-row{display:flex;align-items:center;justify-content:space-between;padding:16rpx 0;border-bottom:1rpx solid #e5efec}.band-row:last-child{border-bottom:0}.band-label{width:180rpx}.number-input{width:180rpx;height:68rpx;border:1px solid #C9DFF2;border-radius:6px;text-align:center}.field-label{font-weight:600;margin-bottom:14rpx}.input{margin-bottom:0}.error-state{text-align:center;color:#b42318;padding:70rpx 0}.retry{width:220rpx;margin-top:20rpx;font-size:26rpx}
 </style>

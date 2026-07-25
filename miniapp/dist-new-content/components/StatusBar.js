@@ -1,0 +1,1 @@
+"use strict";const e=require("../common/vendor.js"),t={__name:"StatusBar",setup(t){const a=e.index.getSystemInfoSync(),s=e.ref(a.statusBarHeight||20);return(e,t)=>({a:s.value+"px"})}},a=e._export_sfc(t,[["__scopeId","data-v-05ea19a3"]]);wx.createComponent(a);

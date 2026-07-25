@@ -1,0 +1,8 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "订单",
+  "usingComponents": {
+    "tab-bar": "../../components/TabBar",
+    "status-bar": "../../components/StatusBar"
+  }
+}

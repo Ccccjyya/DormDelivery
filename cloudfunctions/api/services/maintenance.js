@@ -169,7 +169,26 @@ async function expireWaitingOrderInTransaction(tx, orderId) {
     updatedAt: now,
     version: (order.version || 0) + 1
   } });
-  await writeSystemLog(tx, orderId, 'ORDER_AUTO_EXPIRED', '待接订单发布满12小时自动失效', now);
+
+  // 返还贡献值给发布者
+  const refundAmount = Number(order.rewardAmount ?? LEGACY_REWARD_AMOUNT);
+  if (refundAmount > 0) {
+    const publisher = await tx.collection('users').where({ openid: order.publisherOpenid }).limit(1).get();
+    if (publisher.data.length > 0) {
+      const pub = publisher.data[0];
+      const beforeScore = Number(pub.contributionScore ?? 60);
+      const afterScore = beforeScore + refundAmount;
+      await tx.collection('users').doc(pub._id).update({ data: { contributionScore: afterScore, updatedAt: now } });
+      await tx.collection('contributionRecords').add({ data: {
+        userId: pub._id, openid: pub.openid, changeType: 'ORDER_REFUND',
+        changeAmount: refundAmount, beforeValue: beforeScore, afterValue: afterScore,
+        relatedOrderId: orderId, idempotencyKey: `expire-refund-${orderId}`,
+        note: '订单过期返还贡献值', createdAt: now
+      } });
+    }
+  }
+
+  await writeSystemLog(tx, orderId, 'ORDER_AUTO_EXPIRED', `待接订单发布满12小时自动失效，返还${refundAmount}贡献值`, now);
   return { expired: true, reason: 'EXPIRED', orderId };
 }
 

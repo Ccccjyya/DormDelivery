@@ -21,7 +21,6 @@ async function login({ db, openid }) {
       dormSnapshot: {},
       locks: {},
       contributionScore: 60,
-      postingQuota: 3,
       consecutiveInactiveWeeks: 0,
       publishBlocked: false,
       acceptBlocked: false,

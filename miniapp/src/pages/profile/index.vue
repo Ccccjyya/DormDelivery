@@ -67,7 +67,7 @@ function logout() {
 .profile-name { font-size: 32rpx; font-weight: 600; }
 .metrics { display: flex; gap: 96rpx; margin: 28rpx 0 20rpx; }
 .metric-item { min-width: 120rpx; }
-.metric-unit { margin-left: 6rpx; color: #6a7d76; font-size: 24rpx; }
-.dorm-label { color: #6a7d76; font-size: 26rpx; }
-.admin-label{display:inline-block;margin-top:10rpx;padding:4rpx 12rpx;border-radius:6rpx;background:#e2f3ed;color:#0e6658;font-size:22rpx}
+.metric-unit { margin-left: 6rpx; color: #7A93A8; font-size: 24rpx; }
+.dorm-label { color: #7A93A8; font-size: 26rpx; }
+.admin-label{display:inline-block;margin-top:10rpx;padding:4rpx 12rpx;border-radius:6rpx;background:#E3F1FD;color:#2E8FD9;font-size:22rpx}
 </style>

@@ -135,14 +135,14 @@ function goProfile() { uni.navigateTo({ url: '/pages/profile/index' }); }
   min-height: 84rpx;
   padding: 0 20rpx;
   margin-bottom: 18rpx;
-  border: 1rpx solid #deebe7;
+  border: 1rpx solid #D8E9F7;
   border-radius: 6px;
   background: #fff;
 }
-.filter-label { color: #52635e; font-size: 27rpx; }
-.filter-picker { min-width: 180rpx; color: #147a69; text-align: right; font-size: 27rpx; }
+.filter-label { color: #7A93A8; font-size: 27rpx; }
+.filter-picker { min-width: 180rpx; color: #3E9BF0; text-align: right; font-size: 27rpx; }
 .order-content { flex: 1; min-height: 0; box-sizing: border-box; padding-bottom: 156rpx; }
 .empty { min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 0; }
-.bottom-action { flex: 0 0 auto; padding-top: 14rpx; background: #f3f7f6; }
+.bottom-action { flex: 0 0 auto; padding-top: 14rpx; background: #F3F8FD; }
 .publish-button { margin: 0; }
 </style>

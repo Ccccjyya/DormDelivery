@@ -1,0 +1,1 @@
+<view class="page data-v-972ba827"><view class="login-title data-v-972ba827">宿舍楼互助取送平台</view><view class="login-action data-v-972ba827"><button class="btn data-v-972ba827" loading="{{a}}" bindtap="{{b}}">微信授权登录</button></view></view>

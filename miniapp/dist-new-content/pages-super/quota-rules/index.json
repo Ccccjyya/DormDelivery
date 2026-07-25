@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "发单次数规则",
+  "usingComponents": {
+    "rule-editor": "../../shared/RuleEditor"
+  }
+}

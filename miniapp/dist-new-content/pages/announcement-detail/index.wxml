@@ -1,0 +1,1 @@
+<view class="page data-v-c4409503"><view wx:if="{{a}}" class="data-v-c4409503"><view class="title data-v-c4409503">{{b}}</view><view class="muted published data-v-c4409503">{{c}}</view><view class="card content data-v-c4409503">{{d}}</view></view><view wx:else class="empty data-v-c4409503">加载中…</view></view>

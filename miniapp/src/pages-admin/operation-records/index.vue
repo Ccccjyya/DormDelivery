@@ -131,9 +131,9 @@ onReachBottom(() => load());
 .action { font-weight: 600; }
 .card { line-height: 1.8; }
 .change-line { color: #334a43; font-size: 27rpx; }
-.record-link { margin: 16rpx 0 0; background: #edf5f2; color: #147a69; font-size: 26rpx; }
+.record-link { margin: 16rpx 0 0; background: #EAF4FD; color: #3E9BF0; font-size: 26rpx; }
 .record-link::after { border: 0; }
 .error-state { text-align: center; color: #a02b2b; padding: 60rpx 0; }
 .retry { width: 220rpx; margin-top: 20rpx; font-size: 26rpx; }
-.end { text-align: center; color: #6a7d76; padding: 24rpx; }
+.end { text-align: center; color: #7A93A8; padding: 24rpx; }
 </style>

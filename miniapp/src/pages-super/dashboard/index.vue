@@ -25,4 +25,4 @@ async function loadIdentity(){loading.value=true;errorMessage.value='';try{await
 function confirmLogout(){uni.showModal({title:'退出登录',content:'确认退出当前账号？',success:({confirm})=>{if(!confirm)return;store.clearSession();safeReLaunch('/pages/login/index')}})}
 onShow(loadIdentity);
 </script>
-<style scoped>.menu-button{width:100%;height:92rpx;display:flex;align-items:center;justify-content:center;box-sizing:border-box;margin:14rpx 0;border-radius:6px;background:#edf5f2;color:#1d5b50;font-size:30rpx}.menu-button-active{background:#dcece7}.logout-button{margin-top:28rpx}.error-state{text-align:center;color:#b42318;padding:70rpx 0}.retry{width:220rpx;margin-top:20rpx;font-size:26rpx}</style>
+<style scoped>.menu-button{width:100%;height:92rpx;display:flex;align-items:center;justify-content:center;box-sizing:border-box;margin:14rpx 0;border-radius:6px;background:#EAF4FD;color:#2E8FD9;font-size:30rpx}.menu-button-active{background:#dcece7}.logout-button{margin-top:28rpx}.error-state{text-align:center;color:#b42318;padding:70rpx 0}.retry{width:220rpx;margin-top:20rpx;font-size:26rpx}</style>

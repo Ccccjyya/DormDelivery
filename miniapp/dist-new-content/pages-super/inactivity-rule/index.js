@@ -1,0 +1,1 @@
+"use strict";const e=require("../../common/vendor.js");Math||t();const t=()=>"../../shared/RuleEditor.js",a={__name:"index",setup:t=>(t,a)=>({a:e.p({title:"连续无配送额外处罚规则","rule-type":"INACTIVE_EXTRA_PENALTY",field:"inactiveExtraPenalty","field-label":"连续超过两周无配送额外扣除贡献值",help:"连续超过两周没有完成配送时，从第三周开始触发额外处罚。处罚只有一档，不随连续周数继续增加。"})})};wx.createPage(a);

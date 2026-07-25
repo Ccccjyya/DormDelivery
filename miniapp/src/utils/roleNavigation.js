@@ -3,7 +3,7 @@ import { safeReLaunch } from './navigation';
 export function routeForProfile(profile) {
   if (profile?.role === 'SUPER_ADMIN') return '/pages-super/dashboard/index';
   if (!profile?.profileCompleted) return '/pages/register/index';
-  return '/pages/home/index';
+  return '/pages/tabbar-home/index';
 }
 
 export async function syncRoleSurface(store, surface) {

@@ -1,0 +1,1 @@
+"use strict";const o=require("../common/vendor.js"),e=require("../config/cloudbase.js");exports.uploadCloudFile=async function(t,i="uploads"){const l=t.split(".").pop()||"jpg",n=`${i}/${Date.now()}-${Math.random().toString(16).slice(2)}.${l}`;return{fileID:(await o.wx$1.cloud.uploadFile({cloudPath:n,filePath:t,config:{env:e.CLOUDBASE_ENV_ID}})).fileID,cloudPath:n}};

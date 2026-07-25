@@ -13,4 +13,4 @@ function openOrder(orderId){if(!orderId)return;uni.navigateTo({url:`/pages/order
 async function load(reset=false){if(loading.value||(!reset&&!hasMore.value))return;if(reset){items.value=[];page.value=0;hasMore.value=true}loading.value=true;try{const result=await api.contributionRecords({page:page.value});items.value.push(...result.items);page.value+=1;hasMore.value=result.hasMore}finally{loading.value=false}}
 onShow(()=>load(true));onPullDownRefresh(()=>runPullDownRefresh(()=>load(true)));onReachBottom(()=>load());
 </script>
-<style scoped>.record{line-height:1.8}.positive{color:#147a69;font-weight:700}.negative{color:#dc2626;font-weight:700}.order-link{display:flex;align-items:center;justify-content:space-between;color:#147a69}</style>
+<style scoped>.record{line-height:1.8}.positive{color:#3E9BF0;font-weight:700}.negative{color:#dc2626;font-weight:700}.order-link{display:flex;align-items:center;justify-content:space-between;color:#3E9BF0}</style>

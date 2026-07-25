@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "连续无配送处罚规则",
+  "usingComponents": {
+    "rule-editor": "../../shared/RuleEditor"
+  }
+}

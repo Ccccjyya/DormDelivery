@@ -1,4 +1,4 @@
-export const CLOUDBASE_ENV_ID = 'YOUR_CLOUDBASE_ENV_ID';
+export const CLOUDBASE_ENV_ID = 'cloud1-d0g51zhvo764bc013';
 export const CLOUD_API_FUNCTION = 'api';
 
 export function initCloudBase() {

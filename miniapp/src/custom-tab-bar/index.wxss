@@ -1,0 +1,13 @@
+.custom-tab-bar {
+  display: none;
+  height: 0;
+  overflow: hidden;
+}
+
+.tab-item {
+  display: none;
+}
+
+.tab-text {
+  display: none;
+}

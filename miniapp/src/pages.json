@@ -2,6 +2,16 @@
   "pages": [
     { "path": "pages/login/index", "style": { "navigationBarTitleText": "登录" } },
     { "path": "pages/register/index", "style": { "navigationBarTitleText": "注册" } },
+    { "path": "pages/tabbar-home/index", "style": { "navigationStyle": "custom", "navigationBarTitleText": "首页", "enablePullDownRefresh": true, "backgroundTextStyle": "dark", "backgroundColor": "#F3F8FD" } },
+    { "path": "pages/tabbar-orders/index", "style": { "navigationStyle": "custom", "navigationBarTitleText": "订单", "enablePullDownRefresh": true, "backgroundTextStyle": "dark", "backgroundColor": "#F3F8FD" } },
+    { "path": "pages/tabbar-messages/index", "style": { "navigationStyle": "custom", "navigationBarTitleText": "消息", "enablePullDownRefresh": true, "backgroundTextStyle": "dark", "backgroundColor": "#F3F8FD" } },
+    { "path": "pages/tabbar-profile/index", "style": { "navigationStyle": "custom", "navigationBarTitleText": "我的", "enablePullDownRefresh": true, "backgroundTextStyle": "dark", "backgroundColor": "#F3F8FD" } },
+    { "path": "pages/task-publish-takeout/index", "style": { "navigationBarTitleText": "外卖代取" } },
+    { "path": "pages/task-publish-package/index", "style": { "navigationBarTitleText": "快递代取" } },
+    { "path": "pages/task-publish-grocery/index", "style": { "navigationBarTitleText": "便利店帮带" } },
+    { "path": "pages/task-publish-printing/index", "style": { "navigationBarTitleText": "帮打印" } },
+    { "path": "pages/message-chat/index", "style": { "navigationBarTitleText": "聊天" } },
+    { "path": "pages/chat/index", "style": { "navigationBarTitleText": "私聊", "navigationBarTextStyle": "black", "navigationBarBackgroundColor": "#ffffff" } },
     { "path": "pages/home/index", "style": { "navigationBarTitleText": "可接订单" } },
     { "path": "pages/order-create/index", "style": { "navigationBarTitleText": "发布订单" } },
     { "path": "pages/order-detail/index", "style": { "navigationBarTitleText": "订单详情", "enablePullDownRefresh": true } },
@@ -44,6 +54,18 @@
       ]
     }
   ],
+  "tabBar": {
+    "custom": true,
+    "color": "#999999",
+    "selectedColor": "#3E9BF0",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/tabbar-home/index", "text": "首页" },
+      { "pagePath": "pages/tabbar-orders/index", "text": "订单" },
+      { "pagePath": "pages/tabbar-messages/index", "text": "消息" },
+      { "pagePath": "pages/tabbar-profile/index", "text": "我的" }
+    ]
+  },
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "DormDelivery",

@@ -16,7 +16,6 @@ function toClientUser(user) {
     doorplateNo: dormSnapshot.doorplateNo || '',
     floorNo: dormSnapshot.floorNo || null,
     contributionScore: user.contributionScore ?? 60,
-    postingQuota: user.postingQuota ?? 3,
     consecutiveInactiveWeeks: user.consecutiveInactiveWeeks ?? 0,
     role: user.role,
     accountStatus: user.accountStatus,

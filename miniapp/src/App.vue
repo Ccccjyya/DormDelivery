@@ -24,8 +24,8 @@ onShow(async()=>{
 
 <style>
 page {
-  background: #f3f7f6;
-  color: #172b27;
+  background: #F3F8FD;
+  color: #1B3A57;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 .page {
@@ -38,8 +38,8 @@ page {
   border-radius: 8px;
   padding: 26rpx;
   margin-bottom: 22rpx;
-  border: 1rpx solid #deebe7;
-  box-shadow: 0 4rpx 14rpx rgba(15, 72, 61, 0.05);
+  border: 1rpx solid #D8E9F7;
+  box-shadow: 0 4rpx 14rpx rgba(46, 143, 217, 0.06);
 }
 .title {
   font-size: 40rpx;
@@ -48,7 +48,7 @@ page {
   margin-bottom: 12rpx;
 }
 .subtitle {
-  color: #6a7d76;
+  color: #7A93A8;
   font-size: 26rpx;
   margin-bottom: 24rpx;
 }
@@ -62,44 +62,44 @@ page {
   width: 100%;
   min-height: 84rpx;
   padding: 0 20rpx;
-  border: 1px solid #cfded9;
+  border: 1px solid #C9DFF2;
   border-radius: 6px;
   background: #fff;
   box-sizing: border-box;
   margin-bottom: 18rpx;
 }
 .btn {
-  background: #147a69;
+  background: #3E9BF0;
   color: #fff;
   border-radius: 6px;
   font-size: 30rpx;
   margin: 14rpx 0;
 }
 .btn.secondary {
-  background: #edf5f2;
-  color: #1d5b50;
+  background: #EAF4FD;
+  color: #2E8FD9;
 }
 .btn.danger {
   background: #dc2626;
 }
 .btn::after { border: 0; }
 .muted {
-  color: #6a7d76;
+  color: #7A93A8;
   font-size: 26rpx;
 }
 .empty {
   text-align: center;
-  color: #6a7d76;
+  color: #7A93A8;
   padding: 80rpx 0;
 }
 .status {
   padding: 6rpx 14rpx;
   border-radius: 6rpx;
   font-size: 22rpx;
-  color: #0e6658;
-  background: #e2f3ed;
+  color: #2E8FD9;
+  background: #E3F1FD;
 }
 .status.warning { color: #a05a00; background: #fff1d7; }
 .status.done { color: #356a1e; background: #e9f5dc; }
-.metric { font-size: 38rpx; font-weight: 700; color: #147a69; }
+.metric { font-size: 38rpx; font-weight: 700; color: #2E8FD9; }
 </style>

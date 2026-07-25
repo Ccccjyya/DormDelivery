@@ -1,0 +1,1 @@
+"use strict";const e=require("../common/vendor.js");exports.runPullDownRefresh=async function(o,r=()=>e.index.stopPullDownRefresh()){let s;const n=new Promise(e=>{s=setTimeout(e,5e3)});try{await Promise.race([Promise.resolve().then(o),n])}finally{clearTimeout(s),r()}};

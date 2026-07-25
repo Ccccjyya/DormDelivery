@@ -9,6 +9,7 @@ const admin = require('./services/admin');
 const maintenance = require('./services/maintenance');
 const weeklyMaintenance = require('./services/weeklyMaintenance');
 const superAdmin = require('./services/superAdmin');
+const chat = require('./services/chat');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
@@ -81,6 +82,9 @@ exports.main = async (event = {}) => {
     context.user = await currentUser(openid);
     if (event.action === 'user.me') return await me(context);
     if (event.action === 'user.completeProfile') return await completeProfile(context);
+    if (event.action === 'chat.send') return await chat.send(context);
+    if (event.action === 'chat.list') return await chat.list(context);
+    if (event.action === 'chat.conversations') return await chat.conversations(context);
     return fail('MODULE_PENDING', '该云开发模块将在下一阶段迁移');
   } catch (error) {
     console.error('cloud api failed', error);

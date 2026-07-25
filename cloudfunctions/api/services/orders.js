@@ -7,6 +7,11 @@ const { loadRules } = require('./businessRules');
 const WAITING_HOURS = 12;
 const PAGE_SIZE = 20;
 
+function integer(value, min, max, name) {
+  if (!Number.isInteger(value) || value < min || value > max) throw fail('VALIDATION_ERROR', `${name}必须为${min}到${max}的整数`);
+  return value;
+}
+
 function deliveryOutcome(order, completedAt) {
   const acceptedAt = order.acceptedAt ? new Date(order.acceptedAt) : null;
   const policyApplies = Boolean(order.rewardPolicyVersion && acceptedAt && Number.isFinite(acceptedAt.getTime()));
@@ -46,12 +51,13 @@ function imageIds(value) {
 
 function publicOrder(order) {
   if (!order) return null;
-  return { id: order._id, orderNo: order.orderNo, publisherId: order.publisherId, receiverId: order.receiverId,
+  return { id: order._id, orderNo: order.orderNo, orderType: order.orderType || 'takeout', publisherId: order.publisherId, receiverId: order.receiverId,
     status: order.status, itemName: order.itemName, pickupAddress: order.pickupAddress, timeLimitMinutes: order.timeLimitMinutes,
+    orderDetail: order.orderDetail || '', pickupMode: order.pickupMode || 'dorm', destinationLabel: order.destinationLabel || '',
     remark: order.remark || '', imageFileIds: order.imageFileIds || [], buildingId: order.buildingId, floorNo: order.floorNo,
     roomId: order.roomId, publisherSnapshot: order.publisherSnapshot, receiverSnapshot: order.receiverSnapshot || null,
     createdAt: order.createdAt, acceptedAt: order.acceptedAt || null, deliveryDeadline: order.deliveryDeadline || null,
-    completedAt: order.completedAt || null, expiredAt: order.expiredAt || null, overdue: Boolean(order.overdue),
+    expiresAt: order.expiresAt || null, completedAt: order.completedAt || null, expiredAt: order.expiredAt || null, overdue: Boolean(order.overdue),
     rewardStatus: order.rewardStatus || 'NONE', rewardAmount: order.rewardAmount ?? null,
     rewardGrantedAt: order.rewardGrantedAt || null, rewardRejectedAt: order.rewardRejectedAt || null,
     complaintStatus: order.complaintStatus || 'NONE', complaintDeadline: order.complaintDeadline || null,
@@ -94,14 +100,19 @@ async function create({ db, openid, data }) {
   const clientRequestId = cleanText(data.clientRequestId, '请求标识', 80);
   const itemName = cleanText(data.itemName, '物品信息', 100);
   const pickupAddress = '';
-  const timeLimitMinutes = 10;
+  const timeLimitMinutes = [10, 20, 30, 60, 120, 720].includes(Number(data.timeLimitMinutes)) ? Number(data.timeLimitMinutes) : 720;
   const remark = data.remark ? cleanText(data.remark, '备注', 500) : '';
+  const orderType = ['takeout', 'package', 'grocery', 'printing'].includes(data.orderType) ? data.orderType : 'takeout';
+  const orderDetail = data.orderDetail ? cleanText(data.orderDetail, '外卖信息', 300) : '';
+  const pickupMode = ['dorm', 'station'].includes(data.pickupMode) ? data.pickupMode : 'dorm';
+  const destinationLabel = data.destinationLabel ? cleanText(data.destinationLabel, '送达地址', 200) : '';
   const imageFileIds = imageIds(data.imageFileIds || []);
+  const rules = await loadRules(db);
+  const contributionReward = integer(Number(data.contributionReward || rules.contributionRewardDefault), rules.contributionRewardMin, rules.contributionRewardMax, '贡献值投入');
   const initialUser = await getUser(db, openid); requireProfile(assertActive(initialUser));
   if (initialUser.publishBlocked === true) return fail('PUBLISH_BLOCKED', '已被禁止发单');
   const existing = await db.collection('orders').where({ publisherId: initialUser._id, clientRequestId }).limit(1).get();
   if (existing.data[0]) return ok({ orderId: existing.data[0]._id, duplicate: true });
-  if (Number(initialUser.postingQuota || 0) <= 0) return fail('QUOTA_EXHAUSTED', '发布次数已用尽');
   return createWithOrderNoRetry({
     findExisting: async () => {
       const duplicate = await db.collection('orders').where({ publisherId: initialUser._id, clientRequestId }).limit(1).get();
@@ -112,23 +123,26 @@ async function create({ db, openid, data }) {
     if (user.publishBlocked === true) { const error = new Error('已被禁止发单'); error.code = 'PUBLISH_BLOCKED'; throw error; }
     const duplicate = await tx.collection('orders').where({ publisherId: user._id, clientRequestId }).limit(1).get();
     if (duplicate.data[0]) return ok({ orderId: duplicate.data[0]._id, duplicate: true });
-    const beforeValue = Number(user.postingQuota || 0);
-    if (beforeValue <= 0) { const error = new Error('发布次数已用尽'); error.code = 'QUOTA_EXHAUSTED'; throw error; }
+    const beforeScore = Number(user.contributionScore ?? rules.initialContributionScore);
+    if (beforeScore < contributionReward) { const error = new Error('贡献值不足'); error.code = 'INSUFFICIENT_SCORE'; throw error; }
     const now = new Date();
-    const order = { orderNo, clientRequestId,
+    const afterScore = beforeScore - contributionReward;
+    const order = { orderNo, clientRequestId, orderType, orderDetail, pickupMode, destinationLabel,
       publisherId: user._id, publisherOpenid: user.openid, receiverId: null, receiverOpenid: null, status: 'WAITING', itemName,
       pickupAddress, timeLimitMinutes, remark, imageFileIds, buildingId: user.dormSnapshot.buildingId, floorNo: user.dormSnapshot.floorNo,
       roomId: user.dormSnapshot.roomId, publisherSnapshot: snapshot(user), receiverSnapshot: {}, createdAt: now, updatedAt: now,
-      expiresAt: new Date(now.getTime() + WAITING_HOURS * 3600000), acceptedAt: null, deliveryDeadline: null, completedAt: null,
+      expiresAt: new Date(now.getTime() + timeLimitMinutes * 60000), acceptedAt: null, deliveryDeadline: null, completedAt: null,
       expiredAt: null, overdue: false, deliveryOverdue: false, rewardEligible: null, rewardStatus: 'NONE',
+      rewardAmount: contributionReward, penaltyAmount: rules.upheldComplaintPenalty, rewardPolicyVersion: rules.version,
       everAccepted: false, offShelfType: 'NONE', offShelfAt: null, offShelfBy: null, offShelfByRole: null,
       withdrawn: false, withdrawnAt: null, withdrawnReason: null, version: 1 };
     const added = await tx.collection('orders').add({ data: order });
-    await tx.collection('users').doc(user._id).update({ data: { postingQuota: beforeValue - 1, updatedAt: now } });
-    await tx.collection('quotaRecords').add({ data: { userId: user._id, openid: user.openid, changeType: 'ORDER_PUBLISH', changeAmount: -1,
-      beforeValue, afterValue: beforeValue - 1, relatedOrderId: added._id, createdAt: now } });
-    await log(tx, added._id, user, 'CREATE', '发布订单');
-    return ok({ orderId: added._id, duplicate: false });
+    await tx.collection('users').doc(user._id).update({ data: { contributionScore: afterScore, updatedAt: now } });
+    await tx.collection('contributionRecords').add({ data: { userId: user._id, openid: user.openid, changeType: 'ORDER_PUBLISH',
+      changeAmount: -contributionReward, beforeValue: beforeScore, afterValue: afterScore, relatedOrderId: added._id,
+      idempotencyKey: `publish-${added._id}`, note: '发单消耗贡献值', createdAt: now } });
+    await log(tx, added._id, user, 'CREATE', `发布订单，消耗${contributionReward}贡献值`);
+    return ok({ orderId: added._id, duplicate: false, contributionReward, afterScore });
     }),
     generate: generateOrderNo
   });
@@ -136,7 +150,8 @@ async function create({ db, openid, data }) {
 
 async function available({ db, openid, data }) {
   const user = requireProfile(assertActive(await getUser(db, openid)));
-  const mode = data.filterMode || 'MY_FLOOR'; const condition = { status: 'WAITING', withdrawn: false, buildingId: user.dormSnapshot.buildingId };
+  const mode = data.filterMode || 'MY_FLOOR';
+  const condition = { status: 'WAITING', withdrawn: false, buildingId: user.dormSnapshot.buildingId };
   if (mode === 'MY_FLOOR') condition.floorNo = user.dormSnapshot.floorNo;
   else if (mode === 'SPECIFIC_FLOOR') { const floorNo = Number(data.selectedFloorNo); if (!Number.isInteger(floorNo) || floorNo < 1 || floorNo > 11) throw fail('VALIDATION_ERROR', '楼层无效'); condition.floorNo = floorNo; }
   else if (mode !== 'ALL_FLOORS') throw fail('VALIDATION_ERROR', '筛选方式无效');
@@ -197,16 +212,25 @@ async function complete({ db, openid, data }) {
     if (order.receiverId !== user._id) return fail('FORBIDDEN', '只有接单者可以完成配送');
     const now = new Date();
     const rules = await loadRules(tx);
-    const { policyApplies, deliveryDurationSeconds, deliveryOverdue } = deliveryOutcome(order, now);
+    const { deliveryOverdue } = deliveryOutcome(order, now);
+    const rewardAmount = Number(order.rewardAmount ?? rules.contributionRewardDefault);
     const rewardStatus = deliveryOverdue ? 'CANCELED' : 'FROZEN';
-    const rewardAmount = policyApplies ? rules.completionReward : Number(order.rewardAmount ?? 8);
+
+    // 只有不超时的情况下才冻结贡献值、后续转给接单人；超时则取消并退回发布者
+    if (!deliveryOverdue) {
+      const publisher = await getUser(tx, order.publisherOpenid);
+      if (publisher) {
+        // 冻结期间不操作分数，由 scheduledMaintenance 结算投诉期满后再转
+      }
+    }
+
     await tx.collection('orders').doc(order._id).update({ data: { status: 'COMPLETED', completedAt: now,
       complaintDeadline: new Date(now.getTime() + 6 * 3600000), complaintStatus: 'NONE', rewardAmount,
-      penaltyAmount: rules.upheldComplaintPenalty, deliveryDurationSeconds, deliveryOverdue, overdue: deliveryOverdue,
+      penaltyAmount: rules.upheldComplaintPenalty, deliveryDurationSeconds: null, deliveryOverdue, overdue: deliveryOverdue,
       rewardEligible: !deliveryOverdue, rewardStatus, rewardCancelReason: deliveryOverdue ? 'DELIVERY_OVERTIME' : null,
       rewardCanceledAt: deliveryOverdue ? now : null, updatedAt: now, version: (order.version || 0) + 1 } });
-    await log(tx, order._id, user, 'COMPLETE', deliveryOverdue ? '完成配送，超时取消贡献值' : '完成配送，贡献值冻结');
-    return ok({ orderId: order._id, deliveryOverdue, rewardStatus });
+    await log(tx, order._id, user, 'COMPLETE', deliveryOverdue ? '完成配送，超时取消贡献值' : `完成配送，${rewardAmount}贡献值待结算`);
+    return ok({ orderId: order._id, deliveryOverdue, rewardStatus, rewardAmount });
   });
 }
 
@@ -220,10 +244,25 @@ async function withdraw({ db, openid, data }) {
     if (order.status === 'COMPLETED') return fail('ORDER_COMPLETED', '订单已完成');
     if (order.status === 'WAITING' && new Date(order.expiresAt) <= new Date()) return fail('ORDER_EXPIRED', '订单已失效');
     if (order.status !== 'WAITING') return fail('ORDER_UNAVAILABLE', '订单当前不可下架');
-    const now = new Date(); await tx.collection('orders').doc(order._id).update({ data: { withdrawn: true, withdrawnAt: now,
+    const now = new Date();
+
+    // 返还贡献值
+    const rules = await loadRules(tx);
+    const refundAmount = Number(order.rewardAmount ?? rules.contributionRewardDefault);
+    if (refundAmount > 0) {
+      const publisher = await getUser(tx, order.publisherOpenid);
+      if (publisher) {
+        const beforeScore = Number(publisher.contributionScore ?? rules.initialContributionScore);
+        const afterScore = beforeScore + refundAmount;
+        await tx.collection('users').doc(publisher._id).update({ data: { contributionScore: afterScore, updatedAt: now } });
+        await tx.collection('contributionRecords').add({ data: { userId: publisher._id, openid: publisher.openid, changeType: 'ORDER_REFUND', changeAmount: refundAmount, beforeValue: beforeScore, afterValue: afterScore, relatedOrderId: order._id, idempotencyKey: `refund-${order._id}`, note: '下架订单返还贡献值', createdAt: now } });
+      }
+    }
+
+    await tx.collection('orders').doc(order._id).update({ data: { withdrawn: true, withdrawnAt: now,
       withdrawnReason: 'PUBLISHER', offShelfType: 'PUBLISHER_WITHDRAW', offShelfAt: now, offShelfBy: user._id,
       offShelfByRole: user.role, updatedAt: now, version: (order.version || 0) + 1 } });
-    await log(tx, order._id, user, 'WITHDRAW', '发布者下架订单'); return ok({ orderId: order._id });
+    await log(tx, order._id, user, 'WITHDRAW', `发布者下架订单，返还${refundAmount}贡献值`); return ok({ orderId: order._id, refundedAmount: refundAmount });
   });
 }
 

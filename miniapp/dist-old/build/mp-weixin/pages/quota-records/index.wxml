@@ -1,0 +1,1 @@
+<view class="page"><view class="title">贡献值与发单次数</view><view wx:for="{{a}}" wx:for-item="item" wx:key="g" class="card"><view class="row"><text>{{item.a}}</text><text class="status">{{item.b}}</text></view><view>贡献值：{{item.c}} → {{item.d}}</view><view>本周扣除：{{item.e}}</view><view>新一周发单次数：{{item.f}}</view></view><view wx:if="{{b}}" class="empty">暂无每周结算记录</view></view>

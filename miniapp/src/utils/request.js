@@ -37,6 +37,7 @@ export function cloudRequest(action, data = {}) {
         else if (error.code === 'PUBLISH_BLOCKED') uni.showToast({ title: '已被禁止发单', icon: 'none' });
         else if (error.code === 'ACCEPT_BLOCKED') uni.showToast({ title: '已被禁止接单', icon: 'none' });
         else if (error.code === 'QUOTA_EXHAUSTED') uni.showToast({ title: '发布次数已用尽', icon: 'none' });
+        else if (error.code === 'INSUFFICIENT_SCORE') uni.showToast({ title: '贡献值不足', icon: 'none' });
         else uni.showToast({ title: error.message || '请求失败', icon: 'none' });
         reject(error);
       },
@@ -95,7 +96,12 @@ export const api = {
   saveAnnouncement: (data) => cloudRequest('announcement.save', data),
   offlineAnnouncement: (announcementId) => cloudRequest('announcement.offline', { announcementId }),
   superLogs: (data = {}) => cloudRequest('super.operationLogs', data),
-  superAcceptanceStats: (period = 'WEEK') => cloudRequest('super.acceptanceStats', { period })
+  superAcceptanceStats: (period = 'WEEK') => cloudRequest('super.acceptanceStats', { period }),
+  // 贡献值排行榜（预留）
+  contributionLeaderboard: (data = {}) => cloudRequest('leaderboard.list', data),
+  sendChat: (data) => cloudRequest('chat.send', data),
+  chatMessages: (data) => cloudRequest('chat.list', data),
+  chatConversations: () => cloudRequest('chat.conversations', {})
 };
 
 // Kept for legacy pages until their cloud-function modules are migrated.

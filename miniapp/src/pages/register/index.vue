@@ -142,7 +142,7 @@ async function register() {
     const profile = await api.completeProfile(form);
     store.profile = profile;
     uni.setStorageSync('cloudProfile', profile);
-    await safeReLaunch('/pages/home/index');
+    await safeReLaunch('/pages/tabbar-home/index');
   } finally {
     saving.value = false;
   }
@@ -151,9 +151,9 @@ async function register() {
 
 <style scoped>
 .field-label { margin: 14rpx 0 10rpx; font-size: 27rpx; font-weight: 600; }
-.picker-value { display: flex; align-items: center; color: #52635e; }
+.picker-value { display: flex; align-items: center; color: #7A93A8; }
 .picker-value.disabled { color: #9aa8a4; background: #f4f6f5; }
-.field-hint { margin: -8rpx 0 16rpx; color: #6a7d76; font-size: 24rpx; }
+.field-hint { margin: -8rpx 0 16rpx; color: #7A93A8; font-size: 24rpx; }
 .field-hint.error { color: #b94738; }
-.retry { margin-left: 16rpx; color: #147a69; }
+.retry { margin-left: 16rpx; color: #3E9BF0; }
 </style>

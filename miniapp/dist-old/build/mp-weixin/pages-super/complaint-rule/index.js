@@ -1,0 +1,1 @@
+"use strict";const e=require("../../common/vendor.js");Math||t();const t=()=>"../../shared/RuleEditor.js",l={__name:"index",setup:t=>(t,l)=>({a:e.p({title:"投诉处罚规则","rule-type":"COMPLAINT_PENALTY",field:"upheldComplaintPenalty","field-label":"投诉成立扣除贡献值"})})};wx.createPage(l);

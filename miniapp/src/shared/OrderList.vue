@@ -26,4 +26,4 @@ defineExpose({ refresh: () => load(true) });
 onShow(() => load(true)); onReachBottom(() => load());
 </script>
 
-<style scoped>.end{text-align:center;color:#6a7d76;padding:24rpx}</style>
+<style scoped>.end{text-align:center;color:#7A93A8;padding:24rpx}</style>

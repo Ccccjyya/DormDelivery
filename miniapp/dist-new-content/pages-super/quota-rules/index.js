@@ -1,0 +1,1 @@
+"use strict";const e=require("../../common/vendor.js");Math||t();const t=()=>"../../shared/RuleEditor.js",s={__name:"index",setup:t=>(t,s)=>({a:e.p({title:"每周发单次数规则","rule-type":"WEEKLY_POSTING_QUOTA",mode:"bands"})})};wx.createPage(s);
