@@ -1,195 +1,118 @@
 <template>
   <view class="page">
-    <view class="page-title">便利店帮带</view>
-
-    <view class="form-section">
-      <view class="form-item">
-        <view class="form-label">便利店位置</view>
-        <input v-model="form.itemName" class="form-input" placeholder="如：楼下罗森/全家" />
+    <view class="search-bar">
+      <view class="search-input">
+        <text class="search-icon">🔍</text>
+        <text class="search-placeholder">搜索门店商品</text>
       </view>
-
-      <view class="form-item">
-        <view class="form-label">商品清单</view>
-        <textarea v-model="form.itemList" class="form-textarea" placeholder="请列出需要代买的商品（品名+数量）" />
-      </view>
-
-      <view class="form-item">
-        <view class="form-label">完成时限</view>
-        <picker :value="timeLimitIndex" :range="timeLimitOptions" @change="onTimeLimitChange">
-          <view class="form-picker">{{ timeLimitOptions[timeLimitIndex] }}</view>
-        </picker>
-      </view>
-
-      <view class="form-item">
-        <view class="form-label">
-          贡献值投入
-          <text class="label-hint">（余额 {{ contributionBalance }} 分）</text>
-        </view>
-        <view class="reward-picker">
-          <view
-            v-for="val in rewardOptions"
-            :key="val"
-            class="reward-chip"
-            :class="{ active: form.contributionReward === val }"
-            @click="form.contributionReward = val"
-          >
-            <text class="chip-num">{{ val }}</text>
-            <text class="chip-label">分</text>
-          </view>
-          <view
-            class="reward-chip"
-            :class="{ active: showCustomInput }"
-            @click="showCustomInput = true"
-          >
-            <text class="chip-num">自定义</text>
-          </view>
-        </view>
-        <input
-          v-if="showCustomInput"
-          v-model.number="form.contributionReward"
-          class="form-input"
-          type="number"
-          placeholder="输入1-30之间的贡献值"
-          style="margin-top: 14rpx;"
-        />
-      </view>
-
-      <view class="form-item">
-        <view class="form-label">备注</view>
-        <textarea v-model="form.remark" class="form-textarea" placeholder="如：冰的要冰的/换别的品牌也行……" />
+      <view class="search-actions">
+        <text class="action-icon">⋯</text>
+        <text class="action-icon" style="margin-left: 20rpx;">⊙</text>
       </view>
     </view>
 
-    <view class="submit-btn" @click="handleSubmit">发布订单</view>
+    <view class="body">
+      <scroll-view scroll-y class="cat-list">
+        <view
+          v-for="cat in categories"
+          :key="cat.key"
+          class="cat-item"
+          :class="{ active: activeCat === cat.key }"
+          @click="activeCat = cat.key"
+        >
+          <view class="cat-icon"></view>
+          <text class="cat-name">{{ cat.name }}</text>
+        </view>
+      </scroll-view>
+
+      <scroll-view scroll-y class="product-list">
+        <view class="product-subtabs">
+          <text
+            v-for="sub in activeSubcats"
+            :key="sub"
+            class="subtab"
+            :class="{ active: activeSub === sub }"
+            @click="activeSub = sub"
+          >
+            {{ sub }}
+          </text>
+        </view>
+
+        <view class="empty-products">
+          <text class="empty-text">该分类下暂无商品</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="bottom-bar">
+      <view class="bb-info">
+        <text class="bb-amount">¥0.00</text>
+      </view>
+      <text class="bb-btn">未选购商品</text>
+    </view>
   </view>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
-import { api } from '@/utils/request';
-import { useUserStore } from '@/stores/user';
+import { ref, computed, watch } from 'vue';
 
-const profile = uni.getStorageSync('cloudProfile') || {};
-const contributionBalance = profile.contributionScore ?? 60;
-const rewardOptions = [3, 5, 8, 10, 15];
-const showCustomInput = ref(false);
+const categories = [
+  { key: 'bakery',     name: '面包甜点', subs: ['面包', '甜点'] },
+  { key: 'instant',    name: '便当面点', subs: ['盒饭', '粥面类'] },
+  { key: 'sushi',      name: '寿司饭团', subs: ['寿司', '饭团'] },
+  { key: 'salad',      name: '沙拉轻食', subs: ['沙拉', '菜肴'] },
+  { key: 'sandwich',   name: '三明治',   subs: [] },
+  { key: 'icecream',   name: '冰淇淋',   subs: [] },
+  { key: 'liquor',     name: '酒品',     subs: [] },
+  { key: 'snack',      name: '休闲零食', subs: ['糖', '薯片', '巧克力', '饼干', '果冻'] },
+  { key: 'drink',      name: '水饮饮料', subs: ['茶饮', '饮用水', '饮料', '乳制品'] },
+  { key: 'case',       name: '整箱好物', subs: [] },
+  { key: 'fastfood',   name: '方便速食', subs: [] }
+];
+const activeCat = ref('bakery');
+const activeSub = ref('');
 
-const timeLimitOptions = ['10分钟', '20分钟', '30分钟', '1小时', '2小时', '不限时'];
-const timeLimitIndex = ref(1);
-
-const form = reactive({
-  itemName: '',
-  itemList: '',
-  contributionReward: 5,
-  remark: ''
+const activeSubcats = computed(() => {
+  const cat = categories.find(c => c.key === activeCat.value);
+  return cat ? ['全部', ...cat.subs] : ['全部'];
 });
 
-function onTimeLimitChange(e) {
-  timeLimitIndex.value = e.detail.value;
-}
-
-function generateId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-async function handleSubmit() {
-  if (!(form.itemName || '').trim()) {
-    uni.showToast({ title: '请填写便利店位置', icon: 'none' });
-    return;
-  }
-  const itemName = (form.itemName || '').trim();
-  let remark = form.remark || '';
-  if (form.itemList) {
-    remark = '清单：' + form.itemList + (remark ? ' | ' + remark : '');
-  }
-  uni.showToast({ title: '发布中...', icon: 'loading' });
-  try {
-    const result = await api.createOrder({
-      clientRequestId: generateId(),
-      orderType: 'grocery',
-      itemName,
-      remark,
-      contributionReward: form.contributionReward,
-      imageFileIds: [],
-      timeLimitMinutes: [10, 20, 30, 60, 120, 720][timeLimitIndex.value] || 720
-    });
-    if (result?.orderId) {
-      uni.showToast({ title: '发布成功', icon: 'success' });
-      setTimeout(() => uni.navigateBack(), 800);
-    }
-  } catch (e) {}
-}
+watch(activeCat, () => {
+  activeSub.value = '全部';
+});
 </script>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  background: #F3F8FD;
-  padding: 24rpx;
-}
+.page { display: flex; flex-direction: column; height: 100vh; background: #fff; }
+.search-bar { display: flex; align-items: center; padding: 16rpx 24rpx; background: #fff; border-bottom: 1rpx solid #F0F0F0; }
+.search-input { flex: 1; display: flex; align-items: center; height: 64rpx; background: #F5F6F8; border-radius: 32rpx; padding: 0 20rpx; }
+.search-icon { font-size: 26rpx; color: #999; margin-right: 10rpx; }
+.search-placeholder { font-size: 26rpx; color: #B0B0B0; }
+.search-actions { display: flex; align-items: center; margin-left: 20rpx; }
+.action-icon { font-size: 36rpx; color: #555; }
 
-.page-title {
-  font-size: 40rpx;
-  font-weight: 700;
-  color: #2A4257;
-  text-align: center;
-  padding: 32rpx 0 24rpx;
-}
+.body { flex: 1; display: flex; min-height: 0; padding-bottom: 140rpx; }
+.cat-list { width: 170rpx; background: #F5F6F8; height: 100%; padding-left: 0; margin-left: 0; }
+.cat-item { display: flex; flex-direction: column; align-items: center; padding: 24rpx 0; position: relative; margin-left: 0; }
+.cat-item.active { background: #fff; }
+.cat-item.active::before { content: ''; position: absolute; left: 0; top: 24rpx; bottom: 24rpx; width: 6rpx; background: #3E9BF0; border-radius: 0 4rpx 4rpx 0; }
+.cat-icon { width: 56rpx; height: 56rpx; border-radius: 50%; background: #E3F1FD; margin-bottom: 10rpx; }
+.cat-name { font-size: 24rpx; color: #5A7A92; }
+.cat-item.active .cat-name { color: #3E9BF0; font-weight: 600; }
 
-.form-section {
-  background: #fff;
-  border-radius: 20rpx;
-  padding: 24rpx;
-}
+.product-list { flex: 1; background: #fff; height: 100%; }
+.product-subtabs { display: flex; align-items: center; gap: 20rpx; padding: 20rpx 24rpx; border-bottom: 1rpx solid #F0F0F0; }
+.subtab { font-size: 28rpx; color: #5A7A92; padding: 8rpx 0; position: relative; }
+.subtab.active { font-weight: 700; color: #2A4257; }
+.subtab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 40rpx; height: 4rpx; background: #3E9BF0; border-radius: 2rpx; }
+.subtab.more { margin-left: auto; display: flex; align-items: center; gap: 6rpx; }
+.caret { font-size: 20rpx; color: #999; }
 
-.form-item {
-  margin-bottom: 24rpx;
-}
+.empty-products { padding: 80rpx 0; text-align: center; }
+.empty-text { font-size: 26rpx; color: #B0B0B0; }
 
-.form-label {
-  font-size: 28rpx;
-  color: #333;
-  margin-bottom: 12rpx;
-}
-
-.form-input {
-  width: 100%;
-  height: 80rpx;
-  background: #f8f9fa;
-  border-radius: 12rpx;
-  padding: 0 20rpx;
-  font-size: 28rpx;
-  border: none;
-}
-
-.form-textarea {
-  width: 100%;
-  min-height: 120rpx;
-  background: #f8f9fa;
-  border-radius: 12rpx;
-  padding: 20rpx;
-  font-size: 28rpx;
-  border: none;
-}
-
-.form-picker {
-  height: 80rpx;
-  line-height: 80rpx;
-  background: #f8f9fa;
-  border-radius: 12rpx;
-  padding: 0 20rpx;
-  font-size: 28rpx;
-  color: #333;
-}
-
-.submit-btn {
-  margin-top: 48rpx;
-  background: #3E9BF0;
-  color: #fff;
-  text-align: center;
-  padding: 28rpx 0;
-  border-radius: 16rpx;
-  font-size: 32rpx;
-  font-weight: 600;
-}
+.bottom-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; display: flex; align-items: center; padding: 20rpx 28rpx; padding-bottom: calc(20rpx + env(safe-area-inset-bottom)); background: #fff; border-top: 1rpx solid #F0F0F0; }
+.bb-info { flex: 1; }
+.bb-amount { font-size: 36rpx; font-weight: 700; color: #333; }
+.bb-btn { background: #E0E0E0; color: #999; padding: 18rpx 40rpx; border-radius: 40rpx; font-size: 28rpx; }
 </style>
