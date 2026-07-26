@@ -10,6 +10,7 @@
       <navigator class="menu-button" url="/pages-super/acceptance-stats/index" hover-class="menu-button-active">接单率统计</navigator>
       <navigator class="menu-button" url="/pages-super/announcement-management/index" hover-class="menu-button-active">公告管理</navigator>
       <navigator class="menu-button" url="/pages-super/grocery-products/index" hover-class="menu-button-active">便利店商品管理</navigator>
+      <navigator class="menu-button" url="/pages-super/merchant-review/index" hover-class="menu-button-active">商家审核</navigator>
       <navigator class="menu-button" url="/pages-super/audit-logs/index" hover-class="menu-button-active">操作记录</navigator>
       <button class="btn danger logout-button" @click="confirmLogout">退出登录</button>
     </template>

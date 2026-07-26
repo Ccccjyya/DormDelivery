@@ -52,4 +52,44 @@ async function completeProfile({ db, user, data }) {
   return ok(toClientUser({ ...user, ...updates, dormSnapshot }));
 }
 
-module.exports = { me, completeProfile };
+async function merchantApply({ db, user, data }) {
+  assertActive(user);
+  const contactName = String(data.contactName || '').trim();
+  const phone = String(data.phone || '').trim();
+  const storeName = String(data.storeName || '').trim();
+  const storeAddress = String(data.storeAddress || '').trim();
+  const description = String(data.description || '').trim();
+  const certImages = Array.isArray(data.certImages) ? data.certImages : [];
+  if (!contactName) return fail('VALIDATION_ERROR', '请填写联系人姓名');
+  if (!phone) return fail('VALIDATION_ERROR', '请输入手机号');
+  if (!storeName) return fail('VALIDATION_ERROR', '请填写便利店名称');
+  if (!storeAddress) return fail('VALIDATION_ERROR', '请填写便利店位置');
+  if (!description) return fail('VALIDATION_ERROR', '请填写相关证明说明');
+  if (certImages.length === 0) return fail('VALIDATION_ERROR', '请上传资质证明图片');
+  const application = {
+    userId: user._id,
+    openid: user.openid,
+    realName: user.realName || '',
+    contactName, phone, storeName, storeAddress, description,
+    certImages,
+    status: 'PENDING',
+    createdAt: db.serverDate(),
+    updatedAt: db.serverDate()
+  };
+  await db.collection('merchantApplications').add({ data: application });
+  await db.collection('users').doc(user._id).update({ data: {
+    phone,
+    merchantApplication: db.command.set(application),
+    profileCompleted: true,
+    updatedAt: db.serverDate()
+  }});
+  return ok({ submitted: true });
+}
+
+async function myMerchantApplication({ db, user }) {
+  assertActive(user);
+  const res = await db.collection('merchantApplications').where({ userId: user._id }).orderBy('createdAt', 'desc').limit(1).get();
+  return ok(res.data[0] || null);
+}
+
+module.exports = { me, completeProfile, merchantApply, myMerchantApplication };

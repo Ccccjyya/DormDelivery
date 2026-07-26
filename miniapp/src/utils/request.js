@@ -58,6 +58,8 @@ export const api = {
   me: () => cloudRequest('user.me'),
   completeProfile: (data) => cloudRequest('user.completeProfile', data),
   updateMe: (data) => cloudRequest('user.completeProfile', data),
+  merchantApply: (data) => cloudRequest('merchant.apply', data),
+  merchantMyApplication: () => cloudRequest('merchant.myApplication', {}),
   buildings: () => cloudRequest('dorm.getBuildings'),
   floors: (buildingId) => cloudRequest('dorm.getFloors', { buildingId }),
   rooms: (buildingId, floorNo) => cloudRequest('dorm.getRooms', { buildingId, floorNo }),
@@ -105,6 +107,9 @@ export const api = {
   superGroceryProductList: (data = {}) => cloudRequest('super.groceryProductList', data),
   superGroceryProductSave: (data) => cloudRequest('super.groceryProductSave', data),
   superGroceryProductDelete: (id) => cloudRequest('super.groceryProductDelete', { id }),
+  superMerchantApplications: (data) => cloudRequest('super.merchantApplications', data),
+  superMerchantApplicationDetail: (data) => cloudRequest('super.merchantApplicationDetail', data),
+  superMerchantReview: (data) => cloudRequest('super.merchantApplicationReview', data),
   // 贡献值排行榜（预留）
   contributionLeaderboard: (data = {}) => cloudRequest('leaderboard.list', data),
   sendChat: (data) => cloudRequest('chat.send', data),

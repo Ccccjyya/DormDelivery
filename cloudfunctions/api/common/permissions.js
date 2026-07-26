@@ -1,6 +1,6 @@
 const { fail } = require('./response');
 
-const ROLES = Object.freeze({ USER: 'USER', ADMIN: 'ADMIN', SUPER_ADMIN: 'SUPER_ADMIN' });
+const ROLES = Object.freeze({ USER: 'USER', ADMIN: 'ADMIN', SUPER_ADMIN: 'SUPER_ADMIN', MERCHANT: 'MERCHANT' });
 
 function assertActive(user) {
   if (!user) throw fail('UNAUTHORIZED', '请先完成微信身份登录');
@@ -20,4 +20,10 @@ function requireUserRole(user) {
   return user;
 }
 
-module.exports = { ROLES, assertActive, requireExactRole, requireUserRole };
+function requireAdminOrMerchant(user) {
+  assertActive(user);
+  if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN && user.role !== ROLES.MERCHANT) throw fail('FORBIDDEN', '权限不足');
+  return user;
+}
+
+module.exports = { ROLES, assertActive, requireExactRole, requireUserRole, requireAdminOrMerchant };

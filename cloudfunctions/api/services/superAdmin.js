@@ -1,4 +1,4 @@
-const { ROLES, assertActive, requireExactRole } = require('../common/permissions');
+const { ROLES, assertActive, requireExactRole, requireAdminOrMerchant } = require('../common/permissions');
 const { ok, fail } = require('../common/response');
 const { loadRules, normalizeRules } = require('./businessRules');
 const { periodStartFor, calculateAcceptanceStats } = require('./admin');
@@ -233,12 +233,12 @@ async function groceryProductListPublic({ db, data }) {
 
 // 便利店分类管理
 async function groceryCatList({ db, openid }) {
-  await superUser(db, openid);
+  await requireAdminOrMerchant(assertActive(await userByOpenid(db, openid)));
   const res = await db.collection('groceryCategories').orderBy('createdAt', 'asc').get();
   return ok({ items: res.data });
 }
 async function groceryCatSave({ db, openid, data }) {
-  await superUser(db, openid);
+  await requireAdminOrMerchant(assertActive(await userByOpenid(db, openid)));
   const { id, name, subs: _subs } = data || {};
   const subs = (Array.isArray(_subs) ? _subs : String(_subs || '').split(/[,，]/).map(s => s.trim()).filter(Boolean));
   if (!(name || '').trim()) return fail('VALIDATION_ERROR', '请输入分类名');
@@ -249,36 +249,68 @@ async function groceryCatSave({ db, openid, data }) {
   return ok({ id: added._id });
 }
 async function groceryCatDelete({ db, openid, data }) {
-  await superUser(db, openid);
+  await requireAdminOrMerchant(assertActive(await userByOpenid(db, openid)));
   await db.collection('groceryCategories').doc(data.id).remove();
   return ok({});
 }
 
 // 便利店商品管理
 async function groceryProductList({ db, openid, data }) {
-  await superUser(db, openid);
+  const user = await userByOpenid(db, openid);
+  await requireAdminOrMerchant(assertActive(user));
   let q = db.collection('groceryProducts').orderBy('createdAt', 'desc');
   if (data?.category) q = q.where({ category: data.category });
+  // Merchants only see their own products
+  if (user.role === 'MERCHANT') q = q.where({ merchantId: user._id });
   const res = await q.get();
   return ok({ items: res.data });
 }
 async function groceryProductSave({ db, openid, data }) {
-  await superUser(db, openid);
-  const { id, name, price, imageFileId, category, categoryName, sub, subName } = data || {};
+  await requireAdminOrMerchant(assertActive(await userByOpenid(db, openid)));
+  const { id, name, price, imageFileId, category, categoryName, sub, subName, merchantId } = data || {};
   if (!(name || '').trim()) return fail('VALIDATION_ERROR', '请输入商品名');
   if (!category) return fail('VALIDATION_ERROR', '请选择分类');
   const numPrice = Number(price);
   if (!numPrice || numPrice <= 0) return fail('VALIDATION_ERROR', '请输入有效价格');
   const doc = { name: name.trim(), price: numPrice, imageFileId: imageFileId || '', category, categoryName: categoryName || '',
     sub: sub || '', subName: subName || '全部', updatedAt: new Date() };
+  if (merchantId) doc.merchantId = merchantId;
   if (id) { await db.collection('groceryProducts').doc(id).update({ data: doc }); return ok({ id }); }
   doc.createdAt = new Date();
   const added = await db.collection('groceryProducts').add({ data: doc });
   return ok({ id: added._id });
 }
 async function groceryProductDelete({ db, openid, data }) {
-  await superUser(db, openid);
+  await requireAdminOrMerchant(assertActive(await userByOpenid(db, openid)));
   await db.collection('groceryProducts').doc(data.id).remove();
+  return ok({});
+}
+
+async function merchantApplications({ db, openid, data }) {
+  await superUser(db, openid);
+  let q = db.collection('merchantApplications').orderBy('createdAt', 'desc');
+  if (data?.status) q = q.where({ status: data.status });
+  const res = await q.get();
+  return ok({ items: res.data });
+}
+
+async function merchantApplicationDetail({ db, openid, data }) {
+  await superUser(db, openid);
+  const res = await db.collection('merchantApplications').doc(data.id).get();
+  return ok(res.data);
+}
+
+async function merchantApplicationReview({ db, openid, data }) {
+  await superUser(db, openid);
+  const { id, status } = data || {};
+  if (!['APPROVED', 'REJECTED'].includes(status)) return fail('VALIDATION_ERROR', '无效状态');
+  const app = (await db.collection('merchantApplications').doc(id).get()).data;
+  if (!app) return fail('NOT_FOUND', '申请不存在');
+  if (app.status !== 'PENDING') return fail('INVALID_STATUS', '该申请已处理');
+  await db.collection('merchantApplications').doc(id).update({ data: { status, updatedAt: db.serverDate() } });
+  if (status === 'APPROVED') {
+    await db.collection('users').doc(app.userId).update({ data: { role: 'MERCHANT', updatedAt: db.serverDate() } });
+  }
   return ok({});
 }
 
@@ -286,4 +318,5 @@ module.exports = { ruleGet, ruleUpdate, accountList, setAccountStatus, setAdminR
   announcementAdminList, announcementPublicList, announcementDetail, operationLogs, acceptanceStats,
   groceryCatList, groceryCatSave, groceryCatDelete,
   groceryProductList, groceryProductSave, groceryProductDelete,
-  groceryCatListPublic, groceryProductListPublic };
+  groceryCatListPublic, groceryProductListPublic,
+  merchantApplications, merchantApplicationDetail, merchantApplicationReview };

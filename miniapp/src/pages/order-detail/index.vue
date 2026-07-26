@@ -27,8 +27,8 @@
         <text class="ii-val orange">{{ order.rewardAmount || 0 }}</text>
       </view>
       <view class="info-item">
-        <text class="ii-label">{{ order.status === 'WAITING' ? '接单时限' : '配送时限' }}</text>
-        <text class="ii-val">{{ formatLimit(getCurrentLimit(order)) }}</text>
+        <text class="ii-label">配送时限</text>
+        <text class="ii-val">{{ formatLimit(order.deliveryLimitMinutes ?? order.timeLimitMinutes ?? 720) }}</text>
       </view>
       <view class="info-item">
         <text class="ii-label">发布时间</text>

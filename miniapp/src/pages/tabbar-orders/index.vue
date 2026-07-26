@@ -11,7 +11,7 @@
       </view>
     </view>
 
-    <view class="page-body">
+    <view class="page-body" :style="{ paddingTop: bodyPaddingTop + 'rpx' }">
 
       <view v-if="loading" class="loading-state">加载中...</view>
 
@@ -86,6 +86,18 @@ const received = ref([]);
 const loading = ref(false);
 const now = ref(Date.now());
 let timer = 0;
+
+const bodyPaddingTop = ref(240);
+function calcBodyPadding() {
+  const info = uni.getSystemInfoSync();
+  const statusBarHeight = info.statusBarHeight || 20;
+  // 240rpx = 120px on 375-width. Adjust for actual device.
+  const scale = (info.screenWidth || 375) / 375;
+  const statusBarRpx = Math.round(statusBarHeight * 2 / scale);
+  // header = statusBar + title(108rpx) + tabs(68rpx) + padding(44rpx) = statusBarRpx + 220
+  bodyPaddingTop.value = statusBarRpx + 180;
+}
+calcBodyPadding();
 
 const typeLabel = { takeout: '外卖', package: '快递', grocery: '帮买', printing: '打印' };
 
@@ -182,7 +194,7 @@ onPullDownRefresh(function(){ runPullDownRefresh(async function(){ uni.showLoadi
 .ht-item:last-child { margin-right: 0; }
 .ht-item.active { background: #fff; color: #3E9BF0; font-weight: 600; }
 
-.page-body { padding-top: 240rpx; padding-bottom: 180rpx; }
+.page-body { padding-bottom: 180rpx; }
 
 .section { margin-bottom: 24rpx; }
 .section-label { font-size: 28rpx; font-weight: 600; color: #8AA3B8; padding: 0 32rpx; margin-bottom: 16rpx; }

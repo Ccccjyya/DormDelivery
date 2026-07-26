@@ -78,12 +78,17 @@
         </view>
       </view>
 
-      <view class="section" v-if="isAdmin || isSuperAdmin">
+      <view class="section" v-if="isAdmin || isSuperAdmin || isMerchant">
         <view class="section-title">管理</view>
         <view class="menu-card">
-          <view class="menu-item" @click.stop="goAdmin">
+          <view v-if="isAdmin || isSuperAdmin" class="menu-item" @click.stop="goAdmin">
             <view class="mi mi-admin"></view>
             <text class="menu-text">管理中心</text>
+            <text class="menu-arrow">›</text>
+          </view>
+          <view v-if="isMerchant" class="menu-item" @click.stop="goMerchant">
+            <view class="mi mi-admin"></view>
+            <text class="menu-text">便利店商品管理</text>
             <text class="menu-arrow">›</text>
           </view>
         </view>
@@ -129,6 +134,7 @@ const userInfo = ref({
 });
 const isAdmin = ref(false);
 const isSuperAdmin = ref(false);
+const isMerchant = ref(false);
 
 onShow(async () => {
   await userStore.fetchMe();
@@ -143,6 +149,7 @@ onShow(async () => {
     };
     isAdmin.value = p.role === 'ADMIN';
     isSuperAdmin.value = p.role === 'SUPER_ADMIN';
+    isMerchant.value = p.role === 'MERCHANT';
   }
 });
 
@@ -159,6 +166,7 @@ function goAdmin() {
   });
 }
 function logout() {
+function goMerchant() { uni.redirectTo({ url: '/pages-merchant/dashboard/index' }); }
   uni.showModal({
     title: '退出登录',
     content: '确认退出当前账号？',

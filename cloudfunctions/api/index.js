@@ -1,7 +1,7 @@
 const cloud = require('wx-server-sdk');
 const { ok, fail } = require('./common/response');
 const { login } = require('./services/auth');
-const { me, completeProfile } = require('./services/profile');
+const { me, completeProfile, merchantApply, myMerchantApplication } = require('./services/profile');
 const { getBuildings, getFloors, getRooms } = require('./services/dorm');
 const orders = require('./services/orders');
 const complaints = require('./services/complaints');
@@ -85,11 +85,16 @@ exports.main = async (event = {}) => {
     if (event.action === 'super.groceryProductList') return await superAdmin.groceryProductList(context);
     if (event.action === 'super.groceryProductSave') return await superAdmin.groceryProductSave(context);
     if (event.action === 'super.groceryProductDelete') return await superAdmin.groceryProductDelete(context);
+    if (event.action === 'super.merchantApplications') return await superAdmin.merchantApplications(context);
+    if (event.action === 'super.merchantApplicationDetail') return await superAdmin.merchantApplicationDetail(context);
+    if (event.action === 'super.merchantApplicationReview') return await superAdmin.merchantApplicationReview(context);
     if (event.action === 'weeklyQuota.mine') return await weeklyMaintenance.recordList(context);
 
     context.user = await currentUser(openid);
     if (event.action === 'user.me') return await me(context);
     if (event.action === 'user.completeProfile') return await completeProfile(context);
+    if (event.action === 'merchant.apply') return await merchantApply(context);
+    if (event.action === 'merchant.myApplication') return await myMerchantApplication(context);
     if (event.action === 'chat.send') return await chat.send(context);
     if (event.action === 'chat.list') return await chat.list(context);
     if (event.action === 'chat.conversations') return await chat.conversations(context);

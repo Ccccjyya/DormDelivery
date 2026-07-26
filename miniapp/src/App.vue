@@ -15,8 +15,8 @@ onShow(async()=>{
   try{
     const profile=await store.fetchMe();
     const route=currentPageRoute();
-    const onSuper=route.startsWith('pages-super/');const onAdmin=route.startsWith('pages-admin/');
-    const invalid=profile.role==='SUPER_ADMIN'?!onSuper:(onSuper||(profile.role!=='ADMIN'&&onAdmin));
+    const onSuper=route.startsWith('pages-super/');const onAdmin=route.startsWith('pages-admin/');const onMerchant=route.startsWith('pages-merchant/');
+    const invalid=profile.role==='SUPER_ADMIN'?!onSuper:(profile.role==='MERCHANT'?!onMerchant:(onSuper||(profile.role!=='ADMIN'&&onAdmin)));
     if(invalid)await safeReLaunch(routeForProfile(profile));
   }catch(error){console.error('app role sync failed',{action:'user.me',page:'App',code:error?.code,message:error?.message})}finally{syncingRole=false}
 });

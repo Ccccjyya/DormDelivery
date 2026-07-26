@@ -196,7 +196,7 @@ async function handleGrocerySubmit() {
     });
     if (result?.orderId) {
       uni.showToast({ title: '发布成功', icon: 'success' });
-      setTimeout(() => uni.navigateBack(), 800);
+      setTimeout(() => uni.switchTab({ url: '/pages/tabbar-orders/index' }), 800);
     }
   } catch (e) {}
 }

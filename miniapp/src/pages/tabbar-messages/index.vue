@@ -79,11 +79,11 @@ function formatTime(t) {
 </script>
 
 <style scoped>
-.page { min-height: 100vh; background: #F3F8FD; }
+.page { height: 100vh; background: #fff; display: flex; flex-direction: column; }
 .header-wrapper { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: linear-gradient(160deg, #3E9BF0 0%, #63B5F6 100%); }
 .page-header { padding: 16rpx 32rpx 28rpx; }
 .header-title { font-size: 40rpx; font-weight: 700; color: #fff; }
-.page-body { padding-top: 180rpx; background: #fff; min-height: 100vh; }
+.page-body { width: 100%; padding-top: 180rpx; padding-bottom: 160rpx; padding-left: 0; padding-right: 0; background: #fff; flex: 1; box-sizing: border-box; }
 
 .loading { text-align: center; padding: 80rpx 0; color: #8AA3B8; font-size: 26rpx; }
 .empty { display: flex; flex-direction: column; align-items: center; padding: 120rpx 0; }
@@ -91,7 +91,7 @@ function formatTime(t) {
 .empty-text { font-size: 30rpx; color: #2A4257; font-weight: 500; }
 .empty-hint { font-size: 24rpx; color: #8AA3B8; margin-top: 8rpx; }
 
-.conv-item { display: flex; align-items: center; gap: 20rpx; padding: 24rpx 28rpx; border-bottom: 1rpx solid #F3F8FD; }
+.conv-item { display: flex; align-items: center; gap: 20rpx; padding: 24rpx 32rpx; border-bottom: 1rpx solid #EFEFEF; }
 .conv-item:active { background: #F3F8FD; }
 .conv-avatar { width: 90rpx; height: 90rpx; border-radius: 50%; background: linear-gradient(135deg, #3E9BF0, #63B5F6); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .avatar-initial { font-size: 36rpx; color: #fff; font-weight: 600; }

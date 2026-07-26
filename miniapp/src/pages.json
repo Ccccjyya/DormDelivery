@@ -32,6 +32,8 @@
     { "path": "pages-super/admin-management/index", "style": { "navigationBarTitleText": "管理员管理", "enablePullDownRefresh": true } },
     { "path": "pages-super/account-management/index", "style": { "navigationBarTitleText": "账号管理", "enablePullDownRefresh": true } },
     { "path": "pages-super/announcement-management/index", "style": { "navigationBarTitleText": "公告管理", "enablePullDownRefresh": true } },
+    { "path": "pages-merchant/grocery-products/index", "style": { "navigationBarTitleText": "便利店商品管理" } },
+    { "path": "pages-merchant/dashboard/index", "style": { "navigationBarTitleText": "商家中心" } },
     { "path": "pages-super/contribution-rules/index", "style": { "navigationBarTitleText": "贡献值规则" } },
     { "path": "pages-super/quota-rules/index", "style": { "navigationBarTitleText": "发单次数规则" } },
     { "path": "pages-super/reward-rule/index", "style": { "navigationBarTitleText": "配送奖励规则" } },
@@ -39,7 +41,9 @@
     { "path": "pages-super/inactivity-rule/index", "style": { "navigationBarTitleText": "连续无配送处罚规则" } },
     { "path": "pages-super/audit-logs/index", "style": { "navigationBarTitleText": "操作记录", "enablePullDownRefresh": true } },
     { "path": "pages-super/acceptance-stats/index", "style": { "navigationBarTitleText": "接单率统计", "enablePullDownRefresh": true } },
-    { "path": "pages-super/grocery-products/index", "style": { "navigationBarTitleText": "商品管理", "enablePullDownRefresh": true } }
+    { "path": "pages-super/grocery-products/index", "style": { "navigationBarTitleText": "商品管理", "enablePullDownRefresh": true } },
+    { "path": "pages-super/merchant-review/index", "style": { "navigationBarTitleText": "商家审核" } },
+    { "path": "pages-super/merchant-review/detail", "style": { "navigationBarTitleText": "审核详情" } }
   ],
   "subPackages": [
     {
