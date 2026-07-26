@@ -113,7 +113,7 @@
 
     <view class="actions">
       <button class="act-btn primary" v-if="canAccept" @click="accept">接单</button>
-      <button class="act-btn chat" v-if="showChat" @click="openChat">💬 私聊</button>
+      <button class="act-btn chat" v-if="showChat" @click="openChat">私聊</button>
       <button class="act-btn primary" v-if="canComplete" @click="complete">完成配送</button>
       <button class="act-btn danger" v-if="canWithdraw" @click="expire">下架订单</button>
       <button class="act-btn warn" v-if="!viewOnly && order.canComplain" @click="complaint">提交投诉</button>

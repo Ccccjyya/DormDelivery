@@ -1,30 +1,28 @@
 <template>
   <view class="page">
-    <scroll-view scroll-y class="msg-list" :scroll-into-view="lastMsgId">
+    <scroll-view scroll-y class="msg-list" :scroll-into-view="lastMsgId" :scroll-with-animation="true" :enhanced="true" :show-scrollbar="false" lower-threshold="50">
       <view v-for="msg in messages" :key="msg._divider ? msg.timeText : (msg.id || msg._id)">
         <view v-if="msg._divider" class="time-divider">
           <text class="td-text">{{ msg.timeText }}</text>
         </view>
-        <view v-else :id="'m-' + (msg.id || msg._id)" class="msg-row" :class="msg.isMine ? 'row-mine' : 'row-theirs'">
-          <view v-if="!msg.isMine" class="avatar av-theirs">{{ peerInitial }}</view>
-          <view v-else class="avatar-placeholder"></view>
-
-          <view v-if="msg.isMine" class="msg-body body-mine">
-            <text class="read-status">{{ msg.isRead ? '已读' : '未读' }}</text>
-            <view class="bubble b-mine">
-              <text v-if="msg.type === 'text'" class="b-text">{{ msg.content }}</text>
-              <image v-else :src="msg.fileId" class="b-img" mode="aspectFill" @click="previewImage(msg.fileId)" />
-            </view>
-          </view>
-          <view v-else class="msg-body body-theirs">
+        <view v-else :id="'m-' + (msg.id || msg._id)">
+          <view v-if="!msg.isMine" class="msg-row theirs">
+            <view class="avatar av-theirs">{{ peerInitial }}</view>
             <view class="bubble b-theirs">
               <text v-if="msg.type === 'text'" class="b-text">{{ msg.content }}</text>
               <image v-else :src="msg.fileId" class="b-img" mode="aspectFill" @click="previewImage(msg.fileId)" />
             </view>
           </view>
-
-          <view v-if="msg.isMine" class="avatar av-mine">我</view>
-          <view v-else class="avatar-placeholder"></view>
+          <view v-else class="msg-row mine">
+            <view class="mine-wrap">
+              <view class="bubble b-mine">
+                <text v-if="msg.type === 'text'" class="b-text">{{ msg.content }}</text>
+                <image v-else :src="msg.fileId" class="b-img" mode="aspectFill" @click="previewImage(msg.fileId)" />
+              </view>
+              <text class="read-status">{{ msg.isRead ? '已读' : '未读' }}</text>
+            </view>
+            <view class="avatar av-mine">我</view>
+          </view>
         </view>
       </view>
     </scroll-view>
@@ -38,7 +36,7 @@
 </template>
 
 <script setup>
-import { onLoad, onShow, onHide } from '@dcloudio/uni-app';
+import { onLoad } from '@dcloudio/uni-app';
 import { ref, computed, onUnmounted } from 'vue';
 import { api } from '@/utils/request';
 
@@ -81,12 +79,13 @@ onLoad(async (q) => {
   pollTimer = setInterval(poll, 2000);
 });
 
-uni.onKeyboardHeightChange(res => { keyboardHeight.value = (res && res.height) || 0; });
+uni.onKeyboardHeightChange(res => {
+  keyboardHeight.value = (res && res.height) || 0;
+});
 onUnmounted(() => clearInterval(pollTimer));
 
 const inputBarStyle = computed(() => {
-  if (keyboardHeight.value > 0) return 'transform: translateY(-' + keyboardHeight.value + 'px); transition: transform 0.15s;';
-  return 'transform: translateY(0); transition: transform 0.15s;';
+  return 'bottom: ' + keyboardHeight.value + 'px;';
 });
 
 async function poll() {
@@ -163,37 +162,37 @@ function previewImage(url) {
 </script>
 
 <style scoped>
-.page { width: 100vw; height: 100vh; background: #F3F8FD; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; }
+.page { width: 100vw; height: 100vh; background: #EDEDED; display: flex; flex-direction: column; overflow: hidden; }
 
-.msg-list { flex: 1; width: 100%; padding: 30rpx 24rpx 140rpx; box-sizing: border-box; }
+.msg-list { flex: 1; width: 100%; padding: 20rpx 0 140rpx; box-sizing: border-box; min-height: 0; }
 
-.time-divider { display: flex; justify-content: center; margin: 12rpx 0; }
-.td-text { font-size: 22rpx; color: #B0B0B0; background: rgba(0,0,0,0.06); padding: 6rpx 18rpx; border-radius: 8rpx; }
+.time-divider { display: flex; justify-content: center; margin: 20rpx 0; }
+.td-text { font-size: 22rpx; color: #B0B0B0; background: #DCDCDC; padding: 6rpx 16rpx; border-radius: 6rpx; }
 
-.msg-row { display: flex; align-items: flex-start; width: 100%; box-sizing: border-box; padding: 0 16rpx; margin-bottom: 28rpx; }
-.row-mine { justify-content: flex-end; }
-.row-theirs { justify-content: flex-start; }
+.msg-row { display: flex; align-items: flex-start; padding: 0 20rpx; margin-bottom: 32rpx; box-sizing: border-box; }
+.msg-row.theirs { justify-content: flex-start; }
+.msg-row.mine { justify-content: flex-end; }
 
-.avatar { width: 64rpx; height: 64rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: #fff; font-weight: 500; flex-shrink: 0; margin: 0 14rpx; }
-.av-theirs { background: linear-gradient(135deg, #FF7043, #FF8A65); }
-.av-mine { background: linear-gradient(135deg, #3E9BF0, #63B5F6); }
-.avatar-placeholder { width: 72rpx; height: 1rpx; flex-shrink: 0; margin: 0 10rpx; }
-
-.msg-body { max-width: 65vw; min-width: 0; box-sizing: border-box; }
-.body-mine { text-align: right; }
-.bubble { padding: 18rpx 24rpx; border-radius: 16rpx; display: inline-block; max-width: 100%; box-sizing: border-box; text-align: left; }
+.bubble { padding: 20rpx 26rpx; border-radius: 8rpx; max-width: 68vw; box-sizing: border-box; position: relative; }
 .b-mine { background: #3E9BF0; }
 .b-mine .b-text { color: #fff; }
-.b-theirs { background: #fff; box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.04); }
-.b-theirs .b-text { color: #333; }
-.b-text { font-size: 30rpx; line-height: 1.5; word-break: break-all; display: block; }
-.b-img { width: 240rpx; height: 240rpx; border-radius: 10rpx; display: block; }
+.b-theirs { background: #FFFFFF; }
+.b-theirs .b-text { color: #000; }
+.b-text { font-size: 30rpx; line-height: 1.5; word-break: break-all; }
+.b-img { width: 280rpx; height: 280rpx; border-radius: 8rpx; }
 
-.read-status { font-size: 20rpx; color: #999; margin-right: 8rpx; display: inline-block; vertical-align: bottom; margin-bottom: 4rpx; }
+.avatar { width: 72rpx; height: 72rpx; border-radius: 8rpx; font-size: 30rpx; color: #fff; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.msg-row.theirs .avatar { margin-right: 20rpx; }
+.msg-row.mine .avatar { margin-left: 20rpx; }
+.av-theirs { background: #FF7043; }
+.av-mine { background: #3E9BF0; }
 
-.input-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 14rpx; padding: 18rpx 20rpx; padding-bottom: calc(18rpx + env(safe-area-inset-bottom)); background: #fff; border-top: 1rpx solid #E3F1FD; z-index: 10; box-sizing: border-box; }
-.ib-add { width: 60rpx; height: 60rpx; border-radius: 50%; background: #E3F1FD; color: #3E9BF0; font-size: 36rpx; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.ib-input { flex: 1; height: 72rpx; background: #F3F8FD; border-radius: 36rpx; padding: 0 24rpx; font-size: 28rpx; }
-.ib-send { padding: 14rpx 24rpx; background: #3E9BF0; color: #fff; border-radius: 36rpx; font-size: 28rpx; flex-shrink: 0; }
-.ib-send.disabled { opacity: 0.4; }
+.mine-wrap { display: flex; flex-direction: column; align-items: flex-end; }
+.read-status { font-size: 20rpx; color: #B0B0B0; margin-top: 6rpx; }
+
+.input-bar { position: fixed; left: 0; right: 0; display: flex; align-items: center; gap: 16rpx; padding: 16rpx 20rpx; padding-bottom: calc(16rpx + env(safe-area-inset-bottom)); background: #F7F7F7; border-top: 1rpx solid #D9D9D9; z-index: 10; box-sizing: border-box; transition: bottom 0.15s; }
+.ib-add { width: 64rpx; height: 64rpx; border-radius: 8rpx; background: #FFFFFF; color: #666; font-size: 36rpx; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 2rpx solid #D9D9D9; }
+.ib-input { flex: 1; height: 72rpx; background: #FFFFFF; border-radius: 8rpx; padding: 0 20rpx; font-size: 28rpx; }
+.ib-send { padding: 14rpx 28rpx; background: #3E9BF0; color: #fff; border-radius: 8rpx; font-size: 28rpx; flex-shrink: 0; }
+.ib-send.disabled { background: #A3CBF0; }
 </style>
