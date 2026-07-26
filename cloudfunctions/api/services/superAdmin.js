@@ -220,8 +220,10 @@ async function acceptanceStats({ db, openid, data }) {
 }
 
 // 便利店公开接口（不需要角色验证，供商城页使用）
-async function groceryCatListPublic({ db }) {
-  const res = await db.collection('groceryCategories').orderBy('createdAt', 'asc').get();
+async function groceryCatListPublic({ db, data }) {
+  const merchantId = (data && data.merchantId) ? String(data.merchantId).trim() : '';
+  if (!merchantId) return ok({ items: [] });
+  const res = await db.collection('groceryCategories').where({ merchantId }).orderBy('createdAt', 'asc').get();
   return ok({ items: res.data });
 }
 async function groceryProductListPublic({ db, data }) {
@@ -233,63 +235,98 @@ async function groceryProductListPublic({ db, data }) {
 }
 
 async function merchantListPublic({ db }) {
+  // Only show merchants with approved applications
   const res = await db.collection('users').where({ role: 'MERCHANT' }).field({ _id: true, realName: true, phone: true, merchantApplication: true }).get();
-  const items = res.data.map(u => ({
-    merchantId: u._id,
-    storeName: (u.merchantApplication && u.merchantApplication.storeName) || u.realName || '未命名',
-    storeAddress: (u.merchantApplication && u.merchantApplication.storeAddress) || ''
-  }));
+  const items = [];
+  for (const u of res.data) {
+    // Check if this merchant has an approved application
+    const apps = await db.collection('merchantApplications').where({
+      userId: u._id, status: 'APPROVED'
+    }).limit(1).get();
+    if (apps.data.length > 0) {
+      items.push({
+        merchantId: u._id,
+        storeName: (u.merchantApplication && u.merchantApplication.storeName) || u.realName || '未命名',
+        storeAddress: (u.merchantApplication && u.merchantApplication.storeAddress) || ''
+      });
+    }
+  }
   return ok({ items });
 }
 
 // 便利店分类管理
+async function assertApprovedMerchant(db, openid) {
+  const user = await requireAdminOrMerchant(assertActive(await userByOpenid(db, openid)));
+  // Admins bypass merchant status check
+  if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') return user;
+  // For MERCHANT: check if they have been approved and copied default categories
+  if (user.role === 'MERCHANT') {
+    // Check if categories exist for this merchant (proxy for approved status)
+    const catCount = await db.collection('groceryCategories').where({ merchantId: user._id }).count();
+    if (catCount.total === 0) throw fail('FORBIDDEN', '商家审核未通过，无法管理分类');
+  }
+  return user;
+}
+
 async function groceryCatList({ db, openid }) {
-  await requireAdminOrMerchant(assertActive(await userByOpenid(db, openid)));
-  const res = await db.collection('groceryCategories').orderBy('createdAt', 'asc').get();
+  const user = await assertApprovedMerchant(db, openid);
+  const merchantId = String(user._id);
+  const res = await db.collection('groceryCategories').where({ merchantId }).orderBy('createdAt', 'asc').get();
   return ok({ items: res.data });
 }
 async function groceryCatSave({ db, openid, data }) {
-  await requireAdminOrMerchant(assertActive(await userByOpenid(db, openid)));
+  const user = await assertApprovedMerchant(db, openid);
+  const merchantId = String(user._id);
   const { id, name, subs: _subs } = data || {};
   const subs = (Array.isArray(_subs) ? _subs : String(_subs || '').split(/[,，]/).map(s => s.trim()).filter(Boolean));
   if (!(name || '').trim()) return fail('VALIDATION_ERROR', '请输入分类名');
-  const doc = { name: name.trim(), subs, updatedAt: new Date() };
-  if (id) { await db.collection('groceryCategories').doc(id).update({ data: doc }); return ok({ id }); }
+  const doc = { name: name.trim(), subs, merchantId, updatedAt: new Date() };
+  if (id) {
+    const existing = (await db.collection('groceryCategories').doc(id).get()).data;
+    if (!existing || existing.merchantId !== merchantId) return fail('FORBIDDEN', '分类不存在');
+    await db.collection('groceryCategories').doc(id).update({ data: doc });
+    return ok({ id });
+  }
   doc.key = 'cat_' + Date.now(); doc.createdAt = new Date();
   const added = await db.collection('groceryCategories').add({ data: doc });
   return ok({ id: added._id });
 }
 async function groceryCatDelete({ db, openid, data }) {
-  await requireAdminOrMerchant(assertActive(await userByOpenid(db, openid)));
+  const user = await assertApprovedMerchant(db, openid);
+  const merchantId = String(user._id);
+  const existing = (await db.collection('groceryCategories').doc(data.id).get()).data;
+  if (!existing || existing.merchantId !== merchantId) return fail('FORBIDDEN', '分类不存在');
   await db.collection('groceryCategories').doc(data.id).remove();
   return ok({});
 }
 
 // 便利店商品管理
 async function groceryProductList({ db, openid, data }) {
-  const user = await userByOpenid(db, openid);
-  await requireAdminOrMerchant(assertActive(user));
+  const user = await assertApprovedMerchant(db, openid);
   let q = db.collection('groceryProducts').orderBy('createdAt', 'desc');
   if (data?.category) q = q.where({ category: data.category });
-  // Merchants only see their own products
   if (user.role === 'MERCHANT') q = q.where({ merchantId: user._id });
   const res = await q.get();
   return ok({ items: res.data });
 }
 async function groceryProductSave({ db, openid, data }) {
-  await requireAdminOrMerchant(assertActive(await userByOpenid(db, openid)));
-  const { id, name, price, imageFileId, category, categoryName, sub, subName, merchantId } = data || {};
+  const user = await assertApprovedMerchant(db, openid);
+  const { id, name, price, imageFileId, category, categoryName, sub, subName } = (data || {});
   if (!(name || '').trim()) return fail('VALIDATION_ERROR', '请输入商品名');
   if (!category) return fail('VALIDATION_ERROR', '请选择分类');
-  const numPrice = Number(price);
+  const numPrice = Number(price || 0);
   if (!numPrice || numPrice <= 0) return fail('VALIDATION_ERROR', '请输入有效价格');
-  const doc = { name: name.trim(), price: numPrice, imageFileId: imageFileId || '', category, categoryName: categoryName || '',
-    sub: sub || '', subName: subName || '全部', updatedAt: new Date() };
-  if (merchantId) doc.merchantId = merchantId;
+  const doc = { name: (name || '').trim(), price: numPrice, imageFileId: imageFileId || '', category, categoryName: categoryName || '',
+    sub: sub || '', subName: subName || '全部', merchantId: user._id, updatedAt: new Date() };
   if (id) { await db.collection('groceryProducts').doc(id).update({ data: doc }); return ok({ id }); }
   doc.createdAt = new Date();
   const added = await db.collection('groceryProducts').add({ data: doc });
   return ok({ id: added._id });
+}
+async function groceryProductDelete({ db, openid, data }) {
+  const user = await assertApprovedMerchant(db, openid);
+  await db.collection('groceryProducts').doc(data.id).remove();
+  return ok({});
 }
 async function groceryProductDelete({ db, openid, data }) {
   await requireAdminOrMerchant(assertActive(await userByOpenid(db, openid)));
@@ -321,8 +358,53 @@ async function merchantApplicationReview({ db, openid, data }) {
   await db.collection('merchantApplications').doc(id).update({ data: { status, updatedAt: db.serverDate() } });
   if (status === 'APPROVED') {
     await db.collection('users').doc(app.userId).update({ data: { role: 'MERCHANT', updatedAt: db.serverDate() } });
+    // Copy default categories for this merchant
+    await copyDefaultCategories(db, app.userId);
   }
   return ok({});
+}
+
+async function copyDefaultCategories(db, merchantId) {
+  const existing = await db.collection('groceryCategories').where({ merchantId }).count();
+  if (existing.total > 0) return; // Already has categories
+  const defaults = [
+    { key: 'bakery',   name: '面包甜点', subs: ['面包', '甜点'] },
+    { key: 'instant',  name: '便当面点', subs: ['盒饭', '粥面类'] },
+    { key: 'sushi',    name: '寿司饭团', subs: ['寿司', '饭团'] },
+    { key: 'salad',    name: '沙拉轻食', subs: ['沙拉', '菜肴'] },
+    { key: 'sandwich', name: '三明治',   subs: [] },
+    { key: 'icecream', name: '冰淇淋',   subs: [] },
+    { key: 'liquor',   name: '酒品',     subs: [] },
+    { key: 'snack',    name: '休闲零食', subs: ['糖', '薯片', '巧克力', '饼干', '果冻'] },
+    { key: 'drink',    name: '水饮饮料', subs: ['茶饮', '饮用水', '饮料', '乳制品'] },
+    { key: 'case',     name: '整箱好物', subs: [] },
+    { key: 'fastfood', name: '方便速食', subs: [] }
+  ];
+  const now = new Date();
+  for (const cat of defaults) {
+    await db.collection('groceryCategories').add({
+      data: { ...cat, merchantId, createdAt: now, updatedAt: now }
+    });
+  }
+}
+
+// 迁移：为已存在的 MERCHANT 批量复制默认分类（仅限超级管理员或云端触发）
+async function migrateMerchantCategories({ db, openid }) {
+  if (openid) {
+    await superUser(db, openid);
+  }
+  const merchants = await db.collection('users').where({ role: 'MERCHANT' }).get();
+  const results = [];
+  for (const m of merchants.data) {
+    const existing = await db.collection('groceryCategories').where({ merchantId: m._id }).count();
+    if (existing.total > 0) {
+      results.push({ id: m._id, status: 'skip', existing: existing.total });
+      continue;
+    }
+    await copyDefaultCategories(db, m._id);
+    results.push({ id: m._id, status: 'done' });
+  }
+  return ok({ results });
 }
 
 module.exports = { ruleGet, ruleUpdate, accountList, setAccountStatus, setAdminRole, announcementSave, announcementOffline,
@@ -330,4 +412,5 @@ module.exports = { ruleGet, ruleUpdate, accountList, setAccountStatus, setAdminR
   groceryCatList, groceryCatSave, groceryCatDelete,
   groceryProductList, groceryProductSave, groceryProductDelete,
   groceryCatListPublic, groceryProductListPublic, merchantListPublic,
+  migrateMerchantCategories,
   merchantApplications, merchantApplicationDetail, merchantApplicationReview };

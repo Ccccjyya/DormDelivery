@@ -245,7 +245,7 @@ async function saveCat() {
 async function confirmCatDelete(cat) {
   const r = await new Promise(r => uni.showModal({ title: '确认删除', content: '删除分类「' + cat.name + '」?', success: r }));
   if (!r.confirm) return;
-  try { await api.superGroceryCatDelete({ id: cat._id }); loadCats(); uni.showToast({ title: '已删除', icon: 'success' }); }
+  try { await api.superGroceryCatDelete(cat._id); loadCats(); uni.showToast({ title: '已删除', icon: 'success' }); }
   catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }); }
 }
 </script>

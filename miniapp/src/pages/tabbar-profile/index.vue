@@ -4,30 +4,22 @@
       <StatusBar />
       <view class="page-header">
         <view class="header-content">
-          <view class="avatar-wrap">
-            <view class="avatar-ring"></view>
-            <view class="avatar">
-              <view class="avatar-inner">
-                <view class="avatar-face"></view>
-              </view>
-            </view>
-          </view>
           <view class="user-info">
-            <view class="username">{{ userInfo.nickname }}</view>
+            <view class="username">{{ userInfo.nickname || '未设置' }}</view>
             <view class="user-detail">
               <view class="loc-icon"></view>
-              <text>{{ userInfo.dormInfo }}</text>
+              <text>{{ userInfo.dormInfo || '未完善' }}</text>
             </view>
           </view>
-          <view class="edit-btn" @click="goEdit">
-            <view class="edit-icon"></view>
-            <text>编辑资料</text>
-          </view>
+        </view>
+        <view class="edit-btn" @click="goEdit">
+          <view class="edit-icon"></view>
+          <text>编辑资料</text>
         </view>
       </view>
     </view>
 
-    <view class="page-body">
+    <view class="page-body" :style="{ paddingTop: bodyPaddingTop + 'rpx' }">
       <view class="stats-row">
         <view class="stat-card">
           <view class="stat-icon-wrap moon"><view class="stat-icon-inner"></view></view>
@@ -126,8 +118,8 @@ import { syncRoleSurface } from '../../utils/roleNavigation';
 
 const userStore = useUserStore();
 const userInfo = ref({
-  nickname: '同学',
-  dormInfo: 'B03栋 5楼 302',
+  nickname: '',
+  dormInfo: '',
   contribution: 60,
   remainingOrders: 3,
   level: 1
@@ -135,14 +127,38 @@ const userInfo = ref({
 const isAdmin = ref(false);
 const isSuperAdmin = ref(false);
 const isMerchant = ref(false);
+const statusBarHeight = ref(20);
+const bodyPaddingTop = ref(280);
+
+function buildDormInfo(p) {
+  // If roomLabel already contains full address info (栋/号/楼/层/室/F/单元), use it directly
+  if (p.roomLabel && /栋|号|楼|层|室|F|单元/.test(p.roomLabel)) return p.roomLabel;
+  const parts = [];
+  if (p.dormBuildingName && p.dormBuildingNo) parts.push(p.dormBuildingName + p.dormBuildingNo + '栋');
+  else if (p.dormBuildingName) parts.push(p.dormBuildingName);
+  else if (p.dormBuildingNo) parts.push(p.dormBuildingNo + '栋');
+  if (p.floorNo) parts.push(p.floorNo + 'F');
+  if (p.roomLabel) parts.push(p.roomLabel);
+  return parts.join(' ');
+}
 
 onShow(async () => {
+  try {
+    const sysInfo = uni.getSystemInfoSync();
+    const sbPx = sysInfo.statusBarHeight || 20;
+    statusBarHeight.value = sbPx;
+    // Convert px to rpx using screenWidth-based ratio
+    const screenWidth = sysInfo.screenWidth || 375;
+    const sbRpx = Math.round(sbPx * 750 / screenWidth);
+    // header content + padding ~190rpx; we want stats to appear ~30rpx below header
+    bodyPaddingTop.value = sbRpx + 220;
+  } catch (e) {}
   await userStore.fetchMe();
   const p = userStore.profile;
   if (p) {
     userInfo.value = {
-      nickname: p.displayName || '同学',
-      dormInfo: (p.dormBuildingName || '') + (p.floorNo ? ' ' + p.floorNo + 'F' : '') + (p.roomLabel ? ' ' + p.roomLabel : ''),
+      nickname: p.displayName || p.realName || '',
+      dormInfo: buildDormInfo(p),
       contribution: p.contributionScore ?? 60,
       remainingOrders: p.remainingWeeklyQuota ?? 3,
       level: Math.floor((p.contributionScore || 0) / 100) + 1
@@ -187,8 +203,10 @@ function goMerchant() { uni.redirectTo({ url: '/pages-merchant/dashboard/index' 
 .page { min-height: 100vh; background: #F3F8FD; }
 
 .header-wrapper { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: linear-gradient(160deg, #3E9BF0 0%, #63B5F6 50%, #9FD4FA 100%); }
-.page-header { padding: 16rpx 32rpx 60rpx; }
+.page-header { padding: 32rpx 32rpx 80rpx; position: relative; }
 .header-content { display: flex; align-items: center; gap: 20rpx; }
+.edit-btn { display: flex; align-items: center; gap: 6rpx; font-size: 24rpx; color: #fff; background: rgba(255,255,255,0.25); padding: 10rpx 18rpx; border-radius: 22rpx; flex-shrink: 0; position: absolute; right: 32rpx; bottom: 32rpx; }
+.user-info { flex: 1; min-width: 0; }
 
 .avatar-wrap { flex-shrink: 0; position: relative; width: 120rpx; height: 120rpx; }
 .avatar-ring { position: absolute; inset: 0; border-radius: 50%; border: 4rpx solid rgba(255,255,255,0.6); }
@@ -201,7 +219,6 @@ function goMerchant() { uni.redirectTo({ url: '/pages-merchant/dashboard/index' 
 .user-detail { display: flex; align-items: center; gap: 6rpx; margin-top: 6rpx; font-size: 24rpx; color: rgba(255,255,255,0.9); }
 .loc-icon { width: 14rpx; height: 14rpx; border: 2rpx solid #fff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
 
-.edit-btn { display: flex; align-items: center; gap: 6rpx; font-size: 24rpx; color: #fff; background: rgba(255,255,255,0.25); padding: 10rpx 18rpx; border-radius: 22rpx; }
 .edit-icon { width: 18rpx; height: 18rpx; border: 2rpx solid #fff; border-radius: 2rpx; }
 
 .page-body { padding-top: 280rpx; padding-bottom: 200rpx; }

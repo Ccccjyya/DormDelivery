@@ -99,7 +99,7 @@ export const api = {
   offlineAnnouncement: (announcementId) => cloudRequest('announcement.offline', { announcementId }),
   superLogs: (data = {}) => cloudRequest('super.operationLogs', data),
   superAcceptanceStats: (period = 'WEEK') => cloudRequest('super.acceptanceStats', { period }),
-  groceryCatList: () => cloudRequest('grocery.catList', {}),
+  groceryCatList: (data = {}) => cloudRequest('grocery.catList', data),
   groceryProductList: (data = {}) => cloudRequest('grocery.productList', data),
   groceryMerchantList: () => cloudRequest('grocery.merchantList', {}),
   superGroceryCatList: () => cloudRequest('super.groceryCatList', {}),

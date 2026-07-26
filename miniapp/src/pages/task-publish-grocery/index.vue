@@ -38,25 +38,27 @@
         <view v-else-if="filteredProducts.length === 0" class="empty-products">
           <text class="empty-text">该分类下暂无商品</text>
         </view>
-        <view v-else class="product-list-vertical">
-          <view v-for="p in filteredProducts" :key="p._id" class="p-row">
-            <image v-if="p._img" :src="p._img" class="p-img" mode="aspectFill" />
-            <image v-else-if="p.imageFileId" :src="p.imageFileId" class="p-img" mode="aspectFill" />
-            <view v-else class="p-img-placeholder"><text class="ph-text">无图</text></view>
-            <view class="p-info">
-              <text class="p-name">{{ p.name }}</text>
-              <text class="p-price">¥{{ p.price }}</text>
-            </view>
-            <view class="p-action">
-              <view v-if="cart[p._id]" class="qty-control">
-                <view class="qty-btn" @click="decQty(p)">−</view>
-                <text class="qty-num">{{ cart[p._id] }}</text>
-                <view class="qty-btn" @click="incQty(p)">+</view>
+        <scroll-view v-else scroll-y class="product-list-scroll" :enhanced="true" :show-scrollbar="false">
+          <view class="product-list-vertical">
+            <view v-for="p in filteredProducts" :key="p._id" class="p-row">
+              <image v-if="p._img" :src="p._img" class="p-img" mode="aspectFill" />
+              <image v-else-if="p.imageFileId" :src="p.imageFileId" class="p-img" mode="aspectFill" />
+              <view v-else class="p-img-placeholder"><text class="ph-text">无图</text></view>
+              <view class="p-info">
+                <text class="p-name">{{ p.name }}</text>
+                <text class="p-price">¥{{ p.price }}</text>
               </view>
-              <view v-else class="add-btn" @click="incQty(p)">+</view>
+              <view class="p-action">
+                <view v-if="cart[p._id]" class="qty-control">
+                  <view class="qty-btn" @click="decQty(p)">−</view>
+                  <text class="qty-num">{{ cart[p._id] }}</text>
+                  <view class="qty-btn" @click="incQty(p)">+</view>
+                </view>
+                <view v-else class="add-btn" @click="incQty(p)">+</view>
+              </view>
             </view>
           </view>
-        </view>
+        </scroll-view>
       </view>
     </view>
 
@@ -146,8 +148,12 @@ const storeAddress = ref('');
 
 async function loadCats() {
   try {
-    const catRes = await api.groceryCatList();
-    categories.value = catRes?.items || [];
+    const catRes = await api.groceryCatList({ merchantId: merchantId.value });
+    if (catRes?.items && catRes.items.length > 0) {
+      categories.value = catRes.items;
+    } else {
+      categories.value = defaultCats;
+    }
   } catch (e) { categories.value = defaultCats; }
 }
 
@@ -234,14 +240,14 @@ watch(activeCat, () => { activeSub.value = '全部'; });
 </script>
 
 <style scoped>
-.page { display: flex; flex-direction: column; height: 100vh; background: #fff; }
-.search-bar { display: flex; align-items: center; padding: 16rpx 24rpx; background: #fff; border-bottom: 1rpx solid #F0F0F0; }
+.page { display: flex; flex-direction: column; height: 100vh; background: #fff; overflow: hidden; }
+.search-bar { display: flex; align-items: center; padding: 16rpx 24rpx; background: #fff; border-bottom: 1rpx solid #F0F0F0; flex-shrink: 0; }
 .search-input { flex: 1; display: flex; align-items: center; height: 64rpx; background: #F5F6F8; border-radius: 32rpx; padding: 0 20rpx; }
 .search-icon { font-size: 26rpx; color: #999; margin-right: 10rpx; }
 .search-placeholder { font-size: 26rpx; color: #B0B0B0; }
 .search-real { flex: 1; font-size: 26rpx; color: #2A4257; }
 
-.body { flex: 1; display: flex; min-height: 0; padding-bottom: 140rpx; }
+.body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
 .cat-list { width: 170rpx; background: #F5F6F8; height: 100%; }
 .cat-item { display: flex; align-items: center; justify-content: center; padding: 28rpx 8rpx; position: relative; }
 .cat-item.active { background: #fff; }
@@ -249,14 +255,15 @@ watch(activeCat, () => { activeSub.value = '全部'; });
 .cat-name { font-size: 26rpx; color: #5A7A92; text-align: center; }
 .cat-item.active .cat-name { color: #3E9BF0; font-weight: 600; }
 
-.product-list { flex: 1; background: #fff; height: 100%; overflow-y: auto; }
-.product-subtabs { display: flex; align-items: center; gap: 20rpx; padding: 20rpx 24rpx; border-bottom: 1rpx solid #F0F0F0; flex-wrap: wrap; }
+.product-list { flex: 1; background: #fff; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.product-subtabs { display: flex; align-items: center; gap: 20rpx; padding: 20rpx 24rpx; border-bottom: 1rpx solid #F0F0F0; flex-wrap: wrap; flex-shrink: 0; }
 .subtab { font-size: 26rpx; color: #5A7A92; padding: 6rpx 18rpx; border-radius: 20rpx; background: #F5F6F8; }
 .subtab.active { font-weight: 600; color: #fff; background: #3E9BF0; }
 
-.empty-products { padding: 80rpx 0; text-align: center; }
+.empty-products { padding: 80rpx 0; text-align: center; flex: 1; }
 .empty-text { font-size: 26rpx; color: #B0B0B0; }
 
+.product-list-scroll { flex: 1; min-height: 0; }
 .product-list-vertical { display: flex; flex-direction: column; gap: 16rpx; padding: 16rpx 24rpx; }
 .p-row { display: flex; align-items: center; gap: 20rpx; background: #fff; border-radius: 14rpx; padding: 16rpx; border: 1rpx solid #F0F0F0; height: 192rpx; box-sizing: border-box; }
 .p-img { width: 160rpx; height: 160rpx; border-radius: 12rpx; flex-shrink: 0; background: #F5F6F8; }

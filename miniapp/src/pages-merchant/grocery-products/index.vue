@@ -116,9 +116,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { onLoad } from '@dcloudio/uni-app';
 import { api } from '../../utils/request';
 import { useUserStore } from '../../stores/user';
 import { syncRoleSurface } from '../../utils/roleNavigation';
+import { safeReLaunch } from '../../utils/navigation';
 
 const store = useUserStore();
 const activeTab = ref('products');
@@ -167,7 +169,27 @@ const formSubcats = computed(() => {
   return ['全部', ...(cat?.subs || [])];
 });
 
-onMounted(async () => { await syncRoleSurface(store, 'MERCHANT_OR_SUPER'); await loadCats(); loadProducts(); });
+onMounted(async () => {
+  await store.fetchMe();
+  const profile = store.profile || uni.getStorageSync('cloudProfile') || {};
+  // Only block unapproved merchants
+  if (profile.role === 'MERCHANT') {
+    const app = await api.merchantMyApplication().catch(() => null);
+    if (!app || app.status !== 'APPROVED') {
+      uni.showModal({
+        title: '待审核',
+        content: '您的商家入驻申请正在审核中，审核通过后才能管理商品',
+        showCancel: false,
+        confirmText: '我知道了',
+        success: () => safeReLaunch('/pages-merchant/dashboard/index')
+      });
+      return;
+    }
+  }
+  await syncRoleSurface(store, 'MERCHANT_OR_SUPER');
+  await loadCats();
+  loadProducts();
+});
 
 async function loadCats() {
   try {
@@ -245,7 +267,7 @@ async function saveCat() {
 async function confirmCatDelete(cat) {
   const r = await new Promise(r => uni.showModal({ title: '确认删除', content: '删除分类「' + cat.name + '」?', success: r }));
   if (!r.confirm) return;
-  try { await api.superGroceryCatDelete({ id: cat._id }); loadCats(); uni.showToast({ title: '已删除', icon: 'success' }); }
+  try { await api.superGroceryCatDelete(cat._id); loadCats(); uni.showToast({ title: '已删除', icon: 'success' }); }
   catch (e) { uni.showToast({ title: '删除失败', icon: 'none' }); }
 }
 </script>

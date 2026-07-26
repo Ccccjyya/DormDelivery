@@ -5,7 +5,7 @@
 <script setup>
 import { onShow } from '@dcloudio/uni-app';
 import { useUserStore } from './stores/user';
-import { routeForProfile } from './utils/roleNavigation';
+import { routeForProfile, resolveUserRoute } from './utils/roleNavigation';
 import { currentPageRoute, safeReLaunch } from './utils/navigation';
 const store=useUserStore();let syncingRole=false;
 onShow(async()=>{
@@ -17,7 +17,7 @@ onShow(async()=>{
     const route=currentPageRoute();
     const onSuper=route.startsWith('pages-super/');const onAdmin=route.startsWith('pages-admin/');const onMerchant=route.startsWith('pages-merchant/');
     const invalid=profile.role==='SUPER_ADMIN'?!onSuper:(profile.role==='MERCHANT'?!onMerchant:(onSuper||(profile.role!=='ADMIN'&&onAdmin)));
-    if(invalid)await safeReLaunch(routeForProfile(profile));
+    if(invalid)await safeReLaunch(await resolveUserRoute(profile));
   }catch(error){console.error('app role sync failed',{action:'user.me',page:'App',code:error?.code,message:error?.message})}finally{syncingRole=false}
 });
 </script>

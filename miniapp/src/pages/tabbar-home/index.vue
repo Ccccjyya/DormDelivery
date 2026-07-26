@@ -11,7 +11,7 @@
                 <view class="loc-icon"></view>
                 <text>{{ dormLabel }}</text>
               </view>
-              <text class="subtitle-text">今天有 {{ availableOrders.length }} 单顺路可接</text>
+              <text class="subtitle-text">当前有 {{ availableOrders.length }} 单顺路可接</text>
             </view>
           </view>
         </view>

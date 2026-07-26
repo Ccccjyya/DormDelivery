@@ -86,6 +86,7 @@ exports.main = async (event = {}) => {
     if (event.action === 'super.groceryProductList') return await superAdmin.groceryProductList(context);
     if (event.action === 'super.groceryProductSave') return await superAdmin.groceryProductSave(context);
     if (event.action === 'super.groceryProductDelete') return await superAdmin.groceryProductDelete(context);
+    if (event.action === 'super.migrateMerchantCats') return await superAdmin.migrateMerchantCategories(context);
     if (event.action === 'super.merchantApplications') return await superAdmin.merchantApplications(context);
     if (event.action === 'super.merchantApplicationDetail') return await superAdmin.merchantApplicationDetail(context);
     if (event.action === 'super.merchantApplicationReview') return await superAdmin.merchantApplicationReview(context);
