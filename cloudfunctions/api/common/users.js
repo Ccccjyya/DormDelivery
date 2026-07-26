@@ -15,6 +15,8 @@ function toClientUser(user) {
     roomNo: dormSnapshot.roomNo || '',
     doorplateNo: dormSnapshot.doorplateNo || '',
     floorNo: dormSnapshot.floorNo || null,
+    fullRoomLabel: dormSnapshot.fullRoomLabel || '',
+    roomLabel: dormSnapshot.fullRoomLabel || '',
     contributionScore: user.contributionScore ?? 60,
     consecutiveInactiveWeeks: user.consecutiveInactiveWeeks ?? 0,
     role: user.role,

@@ -59,6 +59,7 @@ exports.main = async (event = {}) => {
     if (event.action === 'reward.settleEligibleBatch') return await complaints.settleEligibleBatchAction(context);
     if (event.action === 'grocery.catList') return await superAdmin.groceryCatListPublic(context);
     if (event.action === 'grocery.productList') return await superAdmin.groceryProductListPublic(context);
+    if (event.action === 'grocery.merchantList') return await superAdmin.merchantListPublic(context);
     if (event.action === 'admin.userList') return await admin.userList(context);
     if (event.action === 'admin.userDetail') return await admin.userDetail(context);
     if (event.action === 'admin.updateUserProfile') return await admin.updateUserProfile(context);

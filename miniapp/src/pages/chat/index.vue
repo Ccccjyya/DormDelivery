@@ -1,80 +1,103 @@
 <template>
   <view class="page">
-    <view class="msg-list">
-      <view v-for="msg in messages" :key="msg._divider ? msg.timeText : msg.id">
+    <scroll-view scroll-y class="msg-list" :scroll-into-view="lastMsgId">
+      <view v-for="msg in messages" :key="msg._divider ? msg.timeText : (msg.id || msg._id)">
         <view v-if="msg._divider" class="time-divider">
           <text class="td-text">{{ msg.timeText }}</text>
         </view>
-        <view v-else class="msg-row" :class="msg.isMine ? 'row-mine' : 'row-theirs'">
-        <view v-if="!msg.isMine" class="avatar av-theirs">{{ peerInitial }}</view>
-        <view v-else class="avatar-placeholder"></view>
+        <view v-else :id="'m-' + (msg.id || msg._id)" class="msg-row" :class="msg.isMine ? 'row-mine' : 'row-theirs'">
+          <view v-if="!msg.isMine" class="avatar av-theirs">{{ peerInitial }}</view>
+          <view v-else class="avatar-placeholder"></view>
 
-        <view v-if="msg.isMine" class="msg-body body-mine">
-          <text class="read-status">{{ msg.isRead ? '已读' : '未读' }}</text>
-          <view class="bubble b-mine">
-            <text v-if="msg.type === 'text'" class="b-text">{{ msg.content }}</text>
-            <image v-else :src="msg.fileId" class="b-img" mode="aspectFill" @click="previewImage(msg.fileId)" />
+          <view v-if="msg.isMine" class="msg-body body-mine">
+            <text class="read-status">{{ msg.isRead ? '已读' : '未读' }}</text>
+            <view class="bubble b-mine">
+              <text v-if="msg.type === 'text'" class="b-text">{{ msg.content }}</text>
+              <image v-else :src="msg.fileId" class="b-img" mode="aspectFill" @click="previewImage(msg.fileId)" />
+            </view>
           </view>
-        </view>
-        <view v-else class="msg-body body-theirs">
-          <view class="bubble b-theirs">
-            <text v-if="msg.type === 'text'" class="b-text">{{ msg.content }}</text>
-            <image v-else :src="msg.fileId" class="b-img" mode="aspectFill" @click="previewImage(msg.fileId)" />
+          <view v-else class="msg-body body-theirs">
+            <view class="bubble b-theirs">
+              <text v-if="msg.type === 'text'" class="b-text">{{ msg.content }}</text>
+              <image v-else :src="msg.fileId" class="b-img" mode="aspectFill" @click="previewImage(msg.fileId)" />
+            </view>
           </view>
-        </view>
 
-        <view v-if="msg.isMine" class="avatar av-mine">我</view>
-        <view v-else class="avatar-placeholder"></view>
+          <view v-if="msg.isMine" class="avatar av-mine">我</view>
+          <view v-else class="avatar-placeholder"></view>
+        </view>
       </view>
-    </view>
-    </view>
+    </scroll-view>
 
-    <view class="input-bar">
+    <view class="input-bar" :style="inputBarStyle">
       <view class="ib-add" @click="chooseImage">+</view>
-      <input class="ib-input" v-model="text" placeholder="戳这里输入消息..." confirm-type="send" @confirm="sendText" />
+      <input class="ib-input" v-model="text" placeholder="戳这里输入消息..." confirm-type="send" @confirm="sendText" :adjust-position="false" />
       <view class="ib-send" :class="{ disabled: !text.trim() }" @click="sendText">发送</view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { onLoad } from '@dcloudio/uni-app';
-import { ref, onUnmounted } from 'vue';
+import { onLoad, onShow, onHide } from '@dcloudio/uni-app';
+import { ref, computed, onUnmounted } from 'vue';
 import { api } from '@/utils/request';
 
 const orderId = ref('');
+const peerOpenid = ref('');
 const peerName = ref('同学');
 const peerInitial = ref('?');
 const messages = ref([]);
 const text = ref('');
+const keyboardHeight = ref(0);
+const lastMsgId = ref('');
 let pollTimer = 0;
 
 onLoad(async (q) => {
   orderId.value = q.orderId || '';
-  try {
-    const order = await api.orderDetail(orderId.value);
-    if (order) {
-      const profile = uni.getStorageSync('cloudProfile') || {};
-      const myId = profile.id;
-      const pub = order.publisherSnapshot || {};
-      const recv = order.receiverSnapshot || {};
-      const peer = myId === order.publisherId ? recv : pub;
-      if (peer.displayName) {
-        peerName.value = peer.displayName;
-        peerInitial.value = peer.displayName.charAt(0);
+  peerOpenid.value = q.peerOpenid ? decodeURIComponent(q.peerOpenid) : '';
+  if (q.peerName) {
+    peerName.value = decodeURIComponent(q.peerName);
+    peerInitial.value = peerName.value.charAt(0);
+  }
+  if (!peerName.value && orderId.value) {
+    try {
+      const order = await api.orderDetail(orderId.value);
+      if (order) {
+        const profile = uni.getStorageSync('cloudProfile') || {};
+        const myId = profile.id;
+        const pub = order.publisherSnapshot || {};
+        const recv = order.receiverSnapshot || {};
+        const peer = myId === order.publisherId ? recv : pub;
+        if (peer.displayName) {
+          peerName.value = peer.displayName;
+          peerInitial.value = peer.displayName.charAt(0);
+        }
+        if (!peerOpenid.value) peerOpenid.value = myId === order.publisherId ? order.receiverOpenid : order.publisherOpenid;
       }
-      uni.setNavigationBarTitle({ title: peerName.value });
-    }
-  } catch (e) {}
+    } catch (e) {}
+  }
+  uni.setNavigationBarTitle({ title: peerName.value });
   poll();
   pollTimer = setInterval(poll, 2000);
 });
+
+uni.onKeyboardHeightChange(res => { keyboardHeight.value = (res && res.height) || 0; });
 onUnmounted(() => clearInterval(pollTimer));
+
+const inputBarStyle = computed(() => {
+  if (keyboardHeight.value > 0) return 'transform: translateY(-' + keyboardHeight.value + 'px); transition: transform 0.15s;';
+  return 'transform: translateY(0); transition: transform 0.15s;';
+});
 
 async function poll() {
   try {
-    const res = await api.chatMessages({ orderId: orderId.value });
-    if (res?.items) messages.value = addTimeDividers(res.items);
+    const params = peerOpenid.value ? { peerOpenid: peerOpenid.value } : { orderId: orderId.value };
+    const res = await api.chatMessages(params);
+    if (res?.items) {
+      messages.value = addTimeDividers(res.items);
+      const last = res.items[res.items.length - 1];
+      if (last) lastMsgId.value = 'm-' + (last.id || last._id);
+    }
   } catch (e) {}
 }
 
@@ -105,6 +128,7 @@ function formatDividerTime(d) {
 async function sendText() {
   const t = text.value.trim();
   if (!t) return;
+  if (!orderId.value) return uni.showToast({ title: '请从订单页进入聊天', icon: 'none' });
   text.value = '';
   try {
     await api.sendChat({ orderId: orderId.value, content: t, type: 'text' });
@@ -139,18 +163,18 @@ function previewImage(url) {
 </script>
 
 <style scoped>
-.page { width: 100vw; min-height: 100vh; background: #F3F8FD; padding-top: 30rpx; padding-bottom: 120rpx; box-sizing: border-box; }
+.page { width: 100vw; height: 100vh; background: #F3F8FD; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; }
 
-.msg-list { width: 100%; }
+.msg-list { flex: 1; width: 100%; padding: 30rpx 24rpx 140rpx; box-sizing: border-box; }
 
 .time-divider { display: flex; justify-content: center; margin: 12rpx 0; }
 .td-text { font-size: 22rpx; color: #B0B0B0; background: rgba(0,0,0,0.06); padding: 6rpx 18rpx; border-radius: 8rpx; }
 
-.msg-row { display: flex; align-items: flex-start; width: 100%; box-sizing: border-box; padding: 0 10rpx; margin-bottom: 28rpx; }
+.msg-row { display: flex; align-items: flex-start; width: 100%; box-sizing: border-box; padding: 0 16rpx; margin-bottom: 28rpx; }
 .row-mine { justify-content: flex-end; }
 .row-theirs { justify-content: flex-start; }
 
-.avatar { width: 72rpx; height: 72rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28rpx; color: #fff; font-weight: 500; flex-shrink: 0; margin: 0 10rpx; }
+.avatar { width: 64rpx; height: 64rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: #fff; font-weight: 500; flex-shrink: 0; margin: 0 14rpx; }
 .av-theirs { background: linear-gradient(135deg, #FF7043, #FF8A65); }
 .av-mine { background: linear-gradient(135deg, #3E9BF0, #63B5F6); }
 .avatar-placeholder { width: 72rpx; height: 1rpx; flex-shrink: 0; margin: 0 10rpx; }
@@ -167,7 +191,7 @@ function previewImage(url) {
 
 .read-status { font-size: 20rpx; color: #999; margin-right: 8rpx; display: inline-block; vertical-align: bottom; margin-bottom: 4rpx; }
 
-.input-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 14rpx; padding: 16rpx 20rpx; padding-bottom: calc(16rpx + env(safe-area-inset-bottom)); background: #fff; border-top: 1rpx solid #E3F1FD; z-index: 10; }
+.input-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 14rpx; padding: 18rpx 20rpx; padding-bottom: calc(18rpx + env(safe-area-inset-bottom)); background: #fff; border-top: 1rpx solid #E3F1FD; z-index: 10; box-sizing: border-box; }
 .ib-add { width: 60rpx; height: 60rpx; border-radius: 50%; background: #E3F1FD; color: #3E9BF0; font-size: 36rpx; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .ib-input { flex: 1; height: 72rpx; background: #F3F8FD; border-radius: 36rpx; padding: 0 24rpx; font-size: 28rpx; }
 .ib-send { padding: 14rpx 24rpx; background: #3E9BF0; color: #fff; border-radius: 36rpx; font-size: 28rpx; flex-shrink: 0; }

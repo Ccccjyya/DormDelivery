@@ -101,6 +101,7 @@ export const api = {
   superAcceptanceStats: (period = 'WEEK') => cloudRequest('super.acceptanceStats', { period }),
   groceryCatList: () => cloudRequest('grocery.catList', {}),
   groceryProductList: (data = {}) => cloudRequest('grocery.productList', data),
+  groceryMerchantList: () => cloudRequest('grocery.merchantList', {}),
   superGroceryCatList: () => cloudRequest('super.groceryCatList', {}),
   superGroceryCatSave: (data) => cloudRequest('super.groceryCatSave', data),
   superGroceryCatDelete: (id) => cloudRequest('super.groceryCatDelete', { id }),

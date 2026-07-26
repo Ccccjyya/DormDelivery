@@ -8,5 +8,6 @@ unpackage/
 project.private.config.json
 .idea/
 .vscode/
+.workbuddy/
 Thumbs.db
 .DS_Store

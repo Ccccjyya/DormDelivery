@@ -5,7 +5,7 @@
         <text class="type-tag" :class="'tag-' + order.orderType">{{ typeLabel[order.orderType] || '外卖' }}</text>
         <text class="hc-status" :class="'s-' + order.status">{{ statusLabel(order) }}</text>
       </view>
-      <text class="hc-title">{{ order.orderDetail || order.itemName }}</text>
+      <text class="hc-title">{{ order.orderType === 'grocery' ? order.itemName : (order.orderDetail || order.itemName) }}</text>
 
       <view class="timer-block" v-if="timerText">
         <text class="timer-num" :class="{ overdue: timerOverdue }">{{ timerText }}</text>
@@ -34,9 +34,38 @@
         <text class="ii-label">发布时间</text>
         <text class="ii-val small">{{ formatTime(order.createdAt) }}</text>
       </view>
+      <view class="info-item" v-if="order.completedAt">
+        <text class="ii-label">送达时间</text>
+        <text class="ii-val small">{{ formatTime(order.completedAt) }}</text>
+      </view>
+      <view class="info-item" v-if="order.deliveryDurationSeconds != null">
+        <text class="ii-label">配送用时</text>
+        <text class="ii-val">{{ formatDuration(order.deliveryDurationSeconds) }}</text>
+      </view>
+    </view>
+
+    <view v-if="order.orderType === 'grocery' && order.groceryItems && order.groceryItems.length" class="items-card">
+      <view class="items-title">商品清单</view>
+      <view v-for="it in order.groceryItems" :key="it.productId" class="item-row">
+        <image v-if="it.imageFileId" :src="it.imageFileId" class="item-img" mode="aspectFill" />
+        <view v-else class="item-img-placeholder"></view>
+        <view class="item-info">
+          <text class="item-name">{{ it.name }}</text>
+          <text class="item-meta">¥{{ it.price }} × {{ it.qty }}</text>
+        </view>
+        <text class="item-subtotal">¥{{ (it.price * it.qty).toFixed(2) }}</text>
+      </view>
+      <view v-if="order.groceryItems.length" class="items-total">
+        <text class="it-label">合计</text>
+        <text class="it-val">¥{{ groceryTotal }}</text>
+      </view>
     </view>
 
     <view class="detail-card">
+      <view class="dc-item" v-if="showPrivate && order.pickupCode">
+        <text class="dc-label">取餐码 / 取件码</text>
+        <text class="dc-text code-text">{{ order.pickupCode }}</text>
+      </view>
       <view class="dc-item" v-if="order.remark">
         <text class="dc-label">备注</text>
         <text class="dc-text">{{ order.remark }}</text>
@@ -59,17 +88,26 @@
       </view>
     </view>
 
-    <view class="photo-gallery" v-if="order.imageFileIds && order.imageFileIds.length">
-      <text class="pg-title">订单图片</text>
-      <view class="pg-grid">
-        <image
-          v-for="(fileId, idx) in order.imageFileIds"
-          :key="fileId"
-          :src="fileId"
-          class="pg-img"
-          mode="aspectFill"
-          @click="preview(fileId)"
-        />
+    <view v-if="showPrivate && order.imageFileIds && order.imageFileIds.length">
+      <view v-if="order.orderType === 'printing'" class="files-card">
+        <text class="pg-title">打印文件</text>
+        <view v-for="(fileId, idx) in order.imageFileIds" :key="fileId" class="file-row">
+          <text class="file-name">📄 {{ printingFileNames[idx] || ('文件' + (idx + 1)) }}</text>
+          <button class="dl-btn" @click="downloadFile(fileId)">下载</button>
+        </view>
+      </view>
+      <view v-else class="photo-gallery">
+        <text class="pg-title">外卖信息截图</text>
+        <view class="pg-grid">
+          <image
+            v-for="(fileId, idx) in order.imageFileIds"
+            :key="fileId"
+            :src="fileId"
+            class="pg-img"
+            mode="aspectFill"
+            @click="preview(fileId)"
+          />
+        </view>
       </view>
     </view>
 
@@ -85,7 +123,7 @@
 
 <script setup>
 import { onLoad, onShow } from '@dcloudio/uni-app';
-import { ref, onUnmounted } from 'vue';
+import { ref, computed, onUnmounted } from 'vue';
 import { useUserStore } from '../../stores/user';
 import { api } from '../../utils/request';
 
@@ -100,8 +138,24 @@ let timer = 0;
 
 const typeLabel = { takeout: '外卖', package: '快递', grocery: '帮买', printing: '打印' };
 
-const routeFrom = ref('');
-const routeTo = ref('');
+const routeFrom = computed(() => {
+  const o = order.value;
+  if (!o) return '';
+  if (o.orderType === 'grocery') {
+    const name = o.itemName || '便利店';
+    const addr = o.pickupAddress || '';
+    return addr ? name + '(' + addr + ')' : name;
+  }
+  return o.itemName || (o.pickupMode === 'station' ? '驿站' : '宿舍楼下');
+});
+const routeTo = computed(() => {
+  const o = order.value;
+  return o ? (o.destinationLabel || (o.publisherSnapshot && o.publisherSnapshot.fullRoomLabel) || '') : '';
+});
+const groceryTotal = computed(() => {
+  const items = (order.value && order.value.groceryItems) || [];
+  return items.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0).toFixed(2);
+});
 
 function statusLabel(o) {
   if (o.withdrawn) return '已下架';
@@ -127,10 +181,46 @@ function formatLimit(min) {
   return min + '分钟';
 }
 
+function formatDuration(seconds) {
+  if (!seconds || seconds < 0) return '0秒';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return h + '小时' + m + '分钟' + s + '秒';
+  if (m > 0) return m + '分钟' + s + '秒';
+  return s + '秒';
+}
+
 const canAccept = ref(false);
 const canComplete = ref(false);
 const canWithdraw = ref(false);
 const showChat = ref(false);
+
+const currentUserId = computed(() => {
+  const profile = store.profile || uni.getStorageSync('cloudProfile') || {};
+  return profile.id || '';
+});
+const showPrivate = computed(() => {
+  const o = order.value;
+  return o && (o.status !== 'WAITING' || o.publisherId === currentUserId.value);
+});
+const printingFileNames = computed(() => {
+  const detail = (order.value && order.value.orderDetail) || '';
+  if (!detail) return [];
+  return detail.split(/[、,，]/).filter(Boolean);
+});
+
+async function downloadFile(fileId) {
+  uni.showLoading({ title: '下载中...' });
+  try {
+    const res = await wx.cloud.downloadFile({ fileID: fileId });
+    uni.hideLoading();
+    wx.openDocument({ filePath: res.tempFilePath, showMenu: true });
+  } catch (e) {
+    uni.hideLoading();
+    uni.showToast({ title: '下载失败，请重试', icon: 'none' });
+  }
+}
 
 function updateButtons() {
   const o = order.value;
@@ -173,10 +263,6 @@ async function load() {
   order.value = await api.orderDetail(id.value);
   const o = order.value;
   if (o) {
-    const pub = o.publisherSnapshot || {};
-    const isStation = o.pickupMode === 'station';
-    routeFrom.value = o.itemName || (isStation ? '驿站' : '宿舍楼下');
-    routeTo.value = o.destinationLabel || pub.fullRoomLabel || '';
     updateTimer();
     updateButtons();
   }
@@ -196,7 +282,16 @@ async function complete() { try { await confirmThen('确认物品已送达？', 
 async function expire() { try { await confirmThen('确认下架此订单？', () => api.expireOrder(id.value)); await load(); } catch (e) { await load(); } }
 function complaint() { uni.navigateTo({ url: '/pages/complaint-create/index?orderId=' + id.value }); }
 function preview(fileId) { wx.previewImage({ current: fileId, urls: order.value.imageFileIds }); }
-function openChat() { uni.navigateTo({ url: '/pages/chat/index?orderId=' + id.value }); }
+function openChat() {
+  const profile = store.profile || uni.getStorageSync('cloudProfile') || {};
+  const myId = profile.id;
+  const pub = order.value?.publisherSnapshot || {};
+  const recv = order.value?.receiverSnapshot || {};
+  const isMine = myId === order.value?.publisherId;
+  const peer = isMine ? recv : pub;
+  const peerOpenid = isMine ? order.value?.receiverOpenid : order.value?.publisherOpenid;
+  uni.navigateTo({ url: '/pages/chat/index?orderId=' + id.value + '&peerOpenid=' + encodeURIComponent(peerOpenid || '') + '&peerName=' + encodeURIComponent(peer.displayName || '') });
+}
 function confirmThen(content, action) {
   return new Promise((resolve, reject) => uni.showModal({ title: '请确认', content, success: async ({ confirm }) => {
     if (!confirm) return reject(new Error('cancelled'));
@@ -234,11 +329,24 @@ function confirmThen(content, action) {
 
 /* 信息网格 */
 .info-grid { display: flex; gap: 16rpx; margin-bottom: 24rpx; }
+.items-card { background: #fff; border-radius: 20rpx; padding: 24rpx; margin-bottom: 24rpx; border: 1rpx solid #E3F1FD; }
+.items-title { font-size: 28rpx; font-weight: 600; color: #2A4257; margin-bottom: 16rpx; }
+.item-row { display: flex; align-items: center; gap: 16rpx; padding: 12rpx 0; border-bottom: 1rpx solid #F0F4F8; }
+.item-row:last-of-type { border-bottom: none; }
+.item-img { width: 100rpx; height: 100rpx; border-radius: 10rpx; background: #F5F6F8; flex-shrink: 0; }
+.item-img-placeholder { width: 100rpx; height: 100rpx; border-radius: 10rpx; background: #F5F6F8; flex-shrink: 0; }
+.item-info { flex: 1; min-width: 0; }
+.item-name { font-size: 26rpx; color: #2A4257; display: block; }
+.item-meta { font-size: 22rpx; color: #8AA3B8; margin-top: 4rpx; display: block; }
+.item-subtotal { font-size: 26rpx; font-weight: 600; color: #FF7043; flex-shrink: 0; }
+.items-total { display: flex; justify-content: space-between; padding-top: 16rpx; margin-top: 8rpx; border-top: 2rpx solid #E3F1FD; }
+.it-label { font-size: 26rpx; color: #8AA3B8; font-weight: 600; }
+.it-val { font-size: 32rpx; color: #FF7043; font-weight: 700; }
 .info-item { flex: 1; background: #fff; border-radius: 16rpx; padding: 20rpx; text-align: center; border: 1rpx solid #E3F1FD; }
 .ii-label { font-size: 22rpx; color: #8AA3B8; display: block; margin-bottom: 8rpx; }
-.ii-val { font-size: 32rpx; font-weight: 700; color: #2A4257; }
+.ii-val { font-size: 28rpx; font-weight: 700; color: #2A4257; white-space: nowrap; }
 .ii-val.orange { color: #FF7043; }
-.ii-val.small { font-size: 24rpx; }
+.ii-val.small { font-size: 22rpx; white-space: nowrap; }
 
 /* 详情卡 */
 .detail-card { background: #fff; border-radius: 20rpx; padding: 24rpx; margin-bottom: 24rpx; border: 1rpx solid #E3F1FD; }
@@ -246,9 +354,15 @@ function confirmThen(content, action) {
 .dc-item:last-child { border-bottom: none; }
 .dc-label { font-size: 24rpx; color: #8AA3B8; display: block; margin-bottom: 6rpx; }
 .dc-text { font-size: 28rpx; color: #2A4257; }
+.code-text { font-size: 36rpx; font-weight: 700; color: #FF7043; letter-spacing: 4rpx; }
 
 /* 图片 */
-.photo-gallery { margin-bottom: 24rpx; }
+.photo-gallery { background: #fff; border-radius: 20rpx; padding: 24rpx; margin-bottom: 24rpx; border: 1rpx solid #E3F1FD; }
+.files-card { background: #fff; border-radius: 20rpx; padding: 24rpx; margin-bottom: 24rpx; border: 1rpx solid #E3F1FD; }
+.file-row { display: flex; align-items: center; justify-content: space-between; padding: 16rpx 0; border-bottom: 1rpx solid #F0F4F8; }
+.file-row:last-child { border-bottom: none; }
+.file-name { font-size: 26rpx; color: #2A4257; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl-btn { background: #3E9BF0; color: #fff; padding: 8rpx 20rpx; border-radius: 10rpx; font-size: 24rpx; flex-shrink: 0; margin-left: 12rpx; line-height: 1.4; }
 .pg-title { font-size: 28rpx; font-weight: 600; color: #2A4257; margin-bottom: 16rpx; display: block; }
 .pg-grid { display: flex; flex-wrap: wrap; gap: 16rpx; }
 .pg-img { width: 200rpx; height: 200rpx; border-radius: 14rpx; background: #f0f0f0; }

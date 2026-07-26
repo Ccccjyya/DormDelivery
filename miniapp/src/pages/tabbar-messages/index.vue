@@ -14,7 +14,7 @@
         <text class="empty-text">暂无消息</text>
         <text class="empty-hint">发布或接单后可与对方私信沟通</text>
       </view>
-      <view v-for="conv in conversations" :key="conv.orderId" class="conv-item" @click="goChat(conv.orderId)">
+      <view v-for="conv in conversations" :key="conv.id" class="conv-item" @click="goChat(conv)">
         <view class="conv-avatar">
           <text class="avatar-initial">{{ (conv.peerName || '?').charAt(0) }}</text>
         </view>
@@ -64,8 +64,8 @@ async function load() {
   loading.value = false;
 }
 
-function goChat(orderId) {
-  uni.navigateTo({ url: '/pages/chat/index?orderId=' + orderId });
+function goChat(conv) {
+  uni.navigateTo({ url: '/pages/chat/index?peerOpenid=' + encodeURIComponent(conv.peerUserId || '') + '&peerName=' + encodeURIComponent(conv.peerName || '同学') });
 }
 
 function formatTime(t) {

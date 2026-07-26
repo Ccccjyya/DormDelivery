@@ -11,7 +11,6 @@
             :class="{ active: pickupMode === 'dorm' }"
             @click="switchPickupMode('dorm')"
           >
-            <text class="toggle-icon">🏠</text>
             <text class="toggle-text">宿舍楼下</text>
           </view>
           <view
@@ -19,20 +18,14 @@
             :class="{ active: pickupMode === 'station' }"
             @click="switchPickupMode('station')"
           >
-            <text class="toggle-icon">📍</text>
             <text class="toggle-text">外卖驿站</text>
           </view>
         </view>
       </view>
 
-      <view class="form-item">
-        <view class="form-label">{{ pickupMode === 'dorm' ? '送达地址' : '驿站位置' }}</view>
-        <view v-if="pickupMode === 'dorm'" class="form-readonly">
-          <text class="readonly-icon">📬</text>
-          <text class="readonly-text">{{ dormAddress }}</text>
-        </view>
+      <view v-if="pickupMode === 'station'" class="form-item">
+        <view class="form-label">驿站位置</view>
         <input
-          v-else
           v-model="form.stationAddress"
           class="form-input"
           placeholder="如：南门外美团取餐柜/顺丰快递旁"
@@ -45,8 +38,8 @@
         <textarea v-model="form.orderDetail" class="form-textarea form-textarea-sm" placeholder="如：二食堂黄焖鸡+可乐" />
       </view>
       <view v-else class="form-item">
-        <view class="form-label">取餐码/订单号</view>
-        <input v-model="form.pickupCode" class="form-input" placeholder="如：取餐码A12" />
+        <view class="form-label">取餐码/手机尾号</view>
+        <input v-model="form.pickupCode" class="form-input" placeholder="如：取餐码A12 / 手机尾号5678" />
       </view>
 
       <view class="form-item">
@@ -64,7 +57,7 @@
       </view>
 
       <view class="form-item">
-        <view class="form-label">外卖照片 <text class="label-hint">（选填，方便接单人辨认）</text></view>
+        <view class="form-label">外卖信息截图</view>
         <view class="photo-grid">
           <view
             v-for="(img, idx) in photos"
@@ -178,16 +171,16 @@ const acceptLimitIndex = ref(2);
 const deliveryLimitOptions = ['10分钟', '20分钟', '30分钟', '1小时', '2小时', '不限时'];
 const deliveryLimitIndex = ref(1);
 
-function choosePhoto() {
+async function choosePhoto() {
   const remain = 4 - photos.value.length;
-  uni.chooseImage({
-    count: remain,
-    sizeType: ['compressed'],
-    sourceType: ['album', 'camera'],
-    success: (res) => {
-      photos.value.push(...res.tempFilePaths);
-    }
-  });
+  const r = await new Promise(resolve => uni.chooseImage({ count: remain, sizeType: ['compressed'], sourceType: ['album', 'camera'], success: resolve }));
+  for (const localPath of r.tempFilePaths) {
+    try {
+      const cloudPath = 'order/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
+      const up = await wx.cloud.uploadFile({ cloudPath, filePath: localPath });
+      if (up.fileID) photos.value.push(up.fileID);
+    } catch (e) { console.warn('上传失败', e); }
+  }
 }
 
 function previewPhoto(idx) {
@@ -232,12 +225,10 @@ async function handleSubmit() {
     itemName = form.stationAddress.trim();
   }
 
-  // 构建备注（含外卖信息或取餐码）
+  // 构建备注（含外卖信息，取餐码单独存储）
   let remark = form.remark || '';
   if (pickupMode.value === 'dorm' && form.orderDetail) {
     remark = `下单：${form.orderDetail}` + (remark ? ` | ${remark}` : '');
-  } else if (pickupMode.value === 'station' && form.pickupCode) {
-    remark = `取餐码：${form.pickupCode}` + (remark ? ` | ${remark}` : '');
   }
 
   uni.showToast({ title: '发布中...', icon: 'loading' });
@@ -249,9 +240,10 @@ async function handleSubmit() {
       remark,
       orderDetail: form.orderDetail,
       pickupMode: pickupMode.value,
+      pickupCode: (pickupMode.value === 'station' && form.pickupCode) ? form.pickupCode : '',
       destinationLabel: pickupMode.value === 'dorm' ? dormAddress.value : '',
       contributionReward: form.contributionReward,
-      imageFileIds: [],
+      imageFileIds: photos.value,
       acceptLimitMinutes: [5, 10, 15, 30, 60, 720][acceptLimitIndex.value] || 720,
       deliveryLimitMinutes: [10, 20, 30, 60, 120, 720][deliveryLimitIndex.value] || 720
     });

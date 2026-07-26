@@ -81,7 +81,7 @@ function handleSelect(type) {
   const routes = {
     takeout: '/pages/task-publish-takeout/index',
     package: '/pages/task-publish-package/index',
-    grocery: '/pages/task-publish-grocery/index',
+    grocery: '/pages/task-publish-store/index',
     printing: '/pages/task-publish-printing/index'
   };
   const url = routes[type];

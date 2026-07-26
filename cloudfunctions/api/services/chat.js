@@ -22,6 +22,12 @@ async function send({ db, openid, data }) {
   const receiverId = isPublisher ? order.receiverId : order.publisherId;
   const receiverOpenid = isPublisher ? order.receiverOpenid : order.publisherOpenid;
   const sender = await getUser(db, openid);
+  const senderName = sender.realName || '';
+  let receiverName = '';
+  if (receiverOpenid) {
+    const recvUser = await getUser(db, receiverOpenid);
+    receiverName = recvUser ? (recvUser.realName || '') : '';
+  }
 
   const type = data.type === 'image' ? 'image' : 'text';
   let content = '';
@@ -37,8 +43,10 @@ async function send({ db, openid, data }) {
     orderId,
     senderId: sender._id,
     senderOpenid: openid,
+    senderName,
     receiverId,
     receiverOpenid,
+    receiverName,
     type,
     content,
     fileId,
@@ -51,25 +59,40 @@ async function send({ db, openid, data }) {
 }
 
 async function list({ db, openid, data }) {
-  const orderId = cleanText(data.orderId, '订单ID', 64);
-  const order = (await db.collection('orders').doc(orderId).get()).data;
-  if (!order) throw fail('ORDER_NOT_FOUND', '订单不存在');
+  const orderId = data.orderId ? String(data.orderId).trim() : '';
+  const peerOpenid = data.peerOpenid ? String(data.peerOpenid).trim() : '';
+  if (!orderId && !peerOpenid) throw fail('VALIDATION_ERROR', '订单ID或对方ID至少传一个');
 
-  const isParticipant = order.publisherOpenid === openid || order.receiverOpenid === openid;
-  if (!isParticipant) throw fail('FORBIDDEN', '无权查看消息');
+  let condition;
+  if (orderId) {
+    const order = (await db.collection('orders').doc(orderId).get()).data;
+    if (!order) throw fail('ORDER_NOT_FOUND', '订单不存在');
+    const isParticipant = order.publisherOpenid === openid || order.receiverOpenid === openid;
+    if (!isParticipant) throw fail('FORBIDDEN', '无权查看消息');
+    condition = { orderId };
+  } else {
+    // 按对方 openid 聚合：我发给他 或 他发给我
+    condition = db.command.or([
+      { senderOpenid: openid, receiverOpenid: peerOpenid },
+      { senderOpenid: peerOpenid, receiverOpenid: openid }
+    ]);
+  }
 
   const lastId = data.lastId || null;
 
   // 先标记未读消息为已读，再查询（使已读状态即时生效）
   const now = new Date();
   try {
-    const unreadQuery = await db.collection('chats').where({ orderId, senderOpenid: db.command.neq(openid), readAt: null }).get();
+    const unreadCond = { senderOpenid: db.command.neq(openid), readAt: null };
+    if (orderId) unreadCond.orderId = orderId;
+    else { unreadCond.senderOpenid = peerOpenid; }
+    const unreadQuery = await db.collection('chats').where(unreadCond).get();
     if (unreadQuery.data.length > 0) {
       await db.collection('chats').where({ _id: db.command.in(unreadQuery.data.map(m => m._id)) }).update({ data: { readAt: now } });
     }
   } catch (e) {}
 
-  let query = db.collection('chats').where({ orderId }).orderBy('createdAt', 'asc').limit(PAGE_SIZE);
+  let query = db.collection('chats').where(condition).orderBy('createdAt', 'asc').limit(PAGE_SIZE);
   if (lastId) {
     const lastMsg = (await db.collection('chats').doc(lastId).get()).data;
     if (lastMsg) query = query.where({ createdAt: db.command.gt(lastMsg.createdAt) });
@@ -108,30 +131,28 @@ async function conversations({ db, openid }) {
   // 拉取所有聊天消息
   const chats = await db.collection('chats').where({ orderId: db.command.in(orderIds) }).orderBy('createdAt', 'asc').get();
 
-  // 按订单聚合最新消息 + 未读数
-  const grouped = new Map();
+  // 收集所有跟当前用户聊过天的人（按 peerUserId 聚合）
+  const peerMap = new Map();
   for (const m of chats.data) {
-    const cur = grouped.get(m.orderId) || { messages: [], unread: 0, latest: null };
+    const peerUserId = m.senderOpenid === openid ? m.receiverOpenid : m.senderOpenid;
+    const peerName = m.senderOpenid === openid ? (m.receiverName || '同学') : (m.senderName || '同学');
+    if (!peerUserId || peerUserId === openid) continue;
+    const cur = peerMap.get(peerUserId) || { messages: [], unread: 0, latest: null, peerName };
     cur.messages.push(m);
     if (!m.readAt && m.senderOpenid !== openid) cur.unread += 1;
     if (!cur.latest || new Date(m.createdAt) > new Date(cur.latest.createdAt)) cur.latest = m;
-    grouped.set(m.orderId, cur);
+    cur.peerName = peerName;
+    peerMap.set(peerUserId, cur);
   }
 
   // 构建会话列表
   const items = [];
-  for (const orderId of orderIds) {
-    const g = grouped.get(orderId);
-    if (!g || !g.latest) continue;
-    const order = myOrders.data.find(o => o._id === orderId);
-    if (!order || order.withdrawn || order.status === 'WAITING' || order.status === 'EXPIRED') continue;
-    const peerId = order.publisherOpenid === openid ? order.receiverId : order.publisherId;
-    const peerName = order.publisherOpenid === openid ? (order.receiverSnapshot?.displayName || '同学') : (order.publisherSnapshot?.displayName || '同学');
+  for (const [peerUserId, g] of peerMap) {
+    if (!g.latest) continue;
     items.push({
-      id: orderId,
-      orderId,
-      peerName,
-      orderTitle: order.orderDetail || order.itemName,
+      id: peerUserId,
+      peerUserId,
+      peerName: g.peerName,
       latestMessage: g.latest.type === 'image' ? '[图片]' : g.latest.content,
       latestTime: g.latest.createdAt,
       unread: g.unread,

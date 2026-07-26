@@ -227,8 +227,19 @@ async function groceryCatListPublic({ db }) {
 async function groceryProductListPublic({ db, data }) {
   let q = db.collection('groceryProducts').orderBy('createdAt', 'desc');
   if (data?.category) q = q.where({ category: data.category });
+  if (data?.merchantId) q = q.where({ merchantId: data.merchantId });
   const res = await q.get();
   return ok({ items: res.data });
+}
+
+async function merchantListPublic({ db }) {
+  const res = await db.collection('users').where({ role: 'MERCHANT' }).field({ _id: true, realName: true, phone: true, merchantApplication: true }).get();
+  const items = res.data.map(u => ({
+    merchantId: u._id,
+    storeName: (u.merchantApplication && u.merchantApplication.storeName) || u.realName || '未命名',
+    storeAddress: (u.merchantApplication && u.merchantApplication.storeAddress) || ''
+  }));
+  return ok({ items });
 }
 
 // 便利店分类管理
@@ -318,5 +329,5 @@ module.exports = { ruleGet, ruleUpdate, accountList, setAccountStatus, setAdminR
   announcementAdminList, announcementPublicList, announcementDetail, operationLogs, acceptanceStats,
   groceryCatList, groceryCatSave, groceryCatDelete,
   groceryProductList, groceryProductSave, groceryProductDelete,
-  groceryCatListPublic, groceryProductListPublic,
+  groceryCatListPublic, groceryProductListPublic, merchantListPublic,
   merchantApplications, merchantApplicationDetail, merchantApplicationReview };

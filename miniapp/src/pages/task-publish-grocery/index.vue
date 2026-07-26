@@ -4,7 +4,7 @@
       <view class="search-input" @click="onSearchClick">
         <text class="search-icon">🔍</text>
         <input v-if="searching" class="search-real" v-model="keyword" focus placeholder="搜索商品" @blur="closeSearch" />
-        <text v-else class="search-placeholder">搜索门店商品</text>
+        <text v-else class="search-placeholder">{{ storeName ? '搜索 ' + storeName : '搜索商品' }}</text>
       </view>
     </view>
 
@@ -131,9 +131,18 @@ const store = useUserStore();
 onMounted(async () => {
   initCloudBase();
   try { await store.fetchMe(); } catch (e) {}
+  const pages = getCurrentPages();
+  const options = pages[pages.length - 1]?.options || {};
+  merchantId.value = options.merchantId || '';
+  storeName.value = decodeURIComponent(options.storeName || '便利店');
+  storeAddress.value = decodeURIComponent(options.storeAddress || '');
   await loadCats();
   await loadProducts();
 });
+
+const merchantId = ref('');
+const storeName = ref('');
+const storeAddress = ref('');
 
 async function loadCats() {
   try {
@@ -144,7 +153,7 @@ async function loadCats() {
 
 async function loadProducts() {
   try {
-    const res = await api.groceryProductList({});
+    const res = await api.groceryProductList({ merchantId: merchantId.value });
     const items = res?.items || [];
     const cats = categories.value;
     items.forEach(p => {
@@ -211,7 +220,7 @@ function goPublish() {
   const prices = {};
   const imgs = {};
   sel.forEach(p => { names[p._id] = p.name; prices[p._id] = p.price; imgs[p._id] = p._img || p.imageFileId || ''; });
-  uni.setStorageSync('groceryCart', { cart: cart.value, names, prices, imgs });
+  uni.setStorageSync('groceryCart', { cart: cart.value, names, prices, imgs, storeName: storeName.value, storeAddress: storeAddress.value, merchantId: merchantId.value });
   uni.navigateTo({ url: '/pages/task-publish/index?type=grocery' });
 }
 function goPublishFromCart() { showCart.value = false; goPublish(); }

@@ -49,12 +49,15 @@ function imageIds(value) {
   return [...new Set(value)];
 }
 
-function publicOrder(order) {
+function publicOrder(order, viewerId) {
   if (!order) return null;
+  // Pickup code is private: only show if order is accepted (not WAITING) or viewer is the publisher
+  const showPickup = order.status !== 'WAITING' || (viewerId && String(viewerId) === String(order.publisherId));
   return { id: order._id, orderNo: order.orderNo, orderType: order.orderType || 'takeout', publisherId: order.publisherId, receiverId: order.receiverId,
     status: order.status, itemName: order.itemName, pickupAddress: order.pickupAddress,
     timeLimitMinutes: order.timeLimitMinutes, acceptLimitMinutes: order.acceptLimitMinutes ?? order.timeLimitMinutes ?? 720, deliveryLimitMinutes: order.deliveryLimitMinutes ?? order.timeLimitMinutes ?? 720,
-    orderDetail: order.orderDetail || '', pickupMode: order.pickupMode || 'dorm', destinationLabel: order.destinationLabel || '',
+    orderDetail: order.orderDetail || '', groceryItems: order.groceryItems || [], pickupMode: order.pickupMode || 'dorm', destinationLabel: order.destinationLabel || '',
+    pickupCode: showPickup ? (order.pickupCode || '') : '',
     remark: order.remark || '', imageFileIds: order.imageFileIds || [], buildingId: order.buildingId, floorNo: order.floorNo,
     roomId: order.roomId, publisherSnapshot: order.publisherSnapshot, receiverSnapshot: order.receiverSnapshot || null,
     createdAt: order.createdAt, acceptedAt: order.acceptedAt || null, deliveryDeadline: order.deliveryDeadline || null,
@@ -108,6 +111,13 @@ async function create({ db, openid, data }) {
   const remark = data.remark ? cleanText(data.remark, '备注', 500) : '';
   const orderType = ['takeout', 'package', 'grocery', 'printing'].includes(data.orderType) ? data.orderType : 'takeout';
   const orderDetail = data.orderDetail ? cleanText(data.orderDetail, '外卖信息', 300) : '';
+  const groceryItems = Array.isArray(data.groceryItems) ? data.groceryItems.slice(0, 50).map(it => ({
+    productId: String(it.productId || '').slice(0, 64),
+    name: String(it.name || '').slice(0, 100),
+    price: Number(it.price) || 0,
+    qty: Number(it.qty) || 0,
+    imageFileId: String(it.imageFileId || '').slice(0, 256)
+  })) : [];
   const pickupMode = ['dorm', 'station'].includes(data.pickupMode) ? data.pickupMode : 'dorm';
   const destinationLabel = data.destinationLabel ? cleanText(data.destinationLabel, '送达地址', 200) : '';
   const imageFileIds = imageIds(data.imageFileIds || []);
@@ -131,7 +141,7 @@ async function create({ db, openid, data }) {
     if (beforeScore < contributionReward) { const error = new Error('贡献值不足'); error.code = 'INSUFFICIENT_SCORE'; throw error; }
     const now = new Date();
     const afterScore = beforeScore - contributionReward;
-    const order = { orderNo, clientRequestId, orderType, orderDetail, pickupMode, destinationLabel,
+    const order = { orderNo, clientRequestId, orderType, orderDetail, groceryItems, pickupMode, destinationLabel, pickupCode: data.pickupCode ? String(data.pickupCode).slice(0, 100) : '',
       publisherId: user._id, publisherOpenid: user.openid, receiverId: null, receiverOpenid: null, status: 'WAITING', itemName,
       pickupAddress, acceptLimitMinutes, deliveryLimitMinutes, remark, imageFileIds, buildingId: user.dormSnapshot.buildingId, floorNo: user.dormSnapshot.floorNo,
       roomId: user.dormSnapshot.roomId, publisherSnapshot: snapshot(user), receiverSnapshot: {}, createdAt: now, updatedAt: now,
@@ -162,7 +172,7 @@ async function available({ db, openid, data }) {
   const page = Math.max(0, Number(data.page || 0));
   const result = await db.collection('orders').where(condition).orderBy('createdAt', 'desc').limit(PAGE_SIZE).skip(page * PAGE_SIZE).get();
   const items = [];
-  for (const order of result.data) { await expireIfNeeded(db, order); if (order.status === 'WAITING' && order.publisherId !== user._id) items.push(publicOrder(order)); }
+  for (const order of result.data) { await expireIfNeeded(db, order); if (order.status === 'WAITING' && order.publisherId !== user._id) items.push(publicOrder(order, user._id)); }
   return ok({ items, page, hasMore: result.data.length === PAGE_SIZE });
 }
 
@@ -174,7 +184,7 @@ async function detail({ db, openid, data }) {
   const complaintDeadline = order.complaintDeadline || (order.completedAt ? new Date(new Date(order.completedAt).getTime() + 6 * 3600000) : null);
   const canComplain = order.publisherId === user._id && order.status === 'COMPLETED' && ['FROZEN', 'CANCELED'].includes(order.rewardStatus)
     && (order.complaintStatus || 'NONE') === 'NONE' && complaintDeadline && new Date() < new Date(complaintDeadline);
-  return ok({ ...publicOrder(order), complaintDeadline, canComplain });
+  return ok({ ...publicOrder(order, user._id), complaintDeadline, canComplain });
 }
 
 async function accept({ db, openid, data }) {
@@ -216,7 +226,7 @@ async function complete({ db, openid, data }) {
     if (order.receiverId !== user._id) return fail('FORBIDDEN', '只有接单者可以完成配送');
     const now = new Date();
     const rules = await loadRules(tx);
-    const { deliveryOverdue } = deliveryOutcome(order, now);
+    const { deliveryOverdue, deliveryDurationSeconds } = deliveryOutcome(order, now);
     const rewardAmount = Number(order.rewardAmount ?? rules.contributionRewardDefault);
     const rewardStatus = deliveryOverdue ? 'CANCELED' : 'FROZEN';
 
@@ -230,7 +240,7 @@ async function complete({ db, openid, data }) {
 
     await tx.collection('orders').doc(order._id).update({ data: { status: 'COMPLETED', completedAt: now,
       complaintDeadline: new Date(now.getTime() + 6 * 3600000), complaintStatus: 'NONE', rewardAmount,
-      penaltyAmount: rules.upheldComplaintPenalty, deliveryDurationSeconds: null, deliveryOverdue, overdue: deliveryOverdue,
+      penaltyAmount: rules.upheldComplaintPenalty, deliveryDurationSeconds, deliveryOverdue, overdue: deliveryOverdue,
       rewardEligible: !deliveryOverdue, rewardStatus, rewardCancelReason: deliveryOverdue ? 'DELIVERY_OVERTIME' : null,
       rewardCanceledAt: deliveryOverdue ? now : null, updatedAt: now, version: (order.version || 0) + 1 } });
     await log(tx, order._id, user, 'COMPLETE', deliveryOverdue ? '完成配送，超时取消贡献值' : `完成配送，${rewardAmount}贡献值待结算`);
@@ -273,7 +283,7 @@ async function withdraw({ db, openid, data }) {
 async function mine({ db, openid, type, data }) {
   const user = requireProfile(assertActive(await getUser(db, openid))); const page = Math.max(0, Number(data.page || 0));
   const key = type === 'PUBLISHED' ? 'publisherId' : 'receiverId'; const result = await db.collection('orders').where({ [key]: user._id }).orderBy('createdAt', 'desc').limit(PAGE_SIZE).skip(page * PAGE_SIZE).get();
-  const items = []; for (const order of result.data) { await expireIfNeeded(db, order); items.push(publicOrder(order)); }
+  const items = []; for (const order of result.data) { await expireIfNeeded(db, order); items.push(publicOrder(order, user._id)); }
   return ok({ items, page, hasMore: result.data.length === PAGE_SIZE });
 }
 

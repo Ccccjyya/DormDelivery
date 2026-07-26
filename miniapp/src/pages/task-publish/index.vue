@@ -123,15 +123,23 @@ const productImgs = ref({});
 
 const dormAddress = ref('');
 
-const store = null;
-try {
-  const m = require('../../stores/user');
-  if (m && m.useUserStore) {
-    const s = m.useUserStore();
-    const p = s.profile || uni.getStorageSync('cloudProfile') || {};
-    dormAddress.value = p.fullRoomLabel || p.roomLabel || '';
-  }
-} catch (e) { dormAddress.value = ''; }
+async function loadDormAddress() {
+  try {
+    const m = require('../../stores/user');
+    if (m && m.useUserStore) {
+      const s = m.useUserStore();
+      if (s.fetchMe) {
+        const p = await s.fetchMe();
+        if (p && p.fullRoomLabel) {
+          dormAddress.value = p.fullRoomLabel;
+          return;
+        }
+      }
+      const p = s.profile || uni.getStorageSync('cloudProfile') || {};
+      dormAddress.value = p.fullRoomLabel || p.roomLabel || '';
+    }
+  } catch (e) { dormAddress.value = ''; }
+}
 
 const cartTotal = computed(() => {
   let s = 0;
@@ -147,6 +155,7 @@ function selectReward(val) { showCustomInput.value = false; form.contribution = 
 function selectCustom() { showCustomInput.value = true; }
 
 onLoad((options) => {
+  loadDormAddress();
   if (options?.type) {
     selectedType.value = options.type;
     currentTypeName.value = taskTypes[options.type] || '发布任务';
@@ -175,19 +184,31 @@ function handleSubmit() {
 }
 
 async function handleGrocerySubmit() {
+  await loadDormAddress();
   if (!form.itemList.trim()) {
     uni.showToast({ title: '商品清单为空', icon: 'none' });
     return;
   }
   uni.showToast({ title: '发布中...', icon: 'loading' });
   try {
+    const cachedCart = uni.getStorageSync('groceryCart');
+    const storeName = (cachedCart && cachedCart.storeName) ? cachedCart.storeName : '便利店';
+    const groceryItems = cachedCart ? Object.entries(cachedCart.cart || {}).map(([id, qty]) => ({
+      productId: id,
+      name: (cachedCart.names && cachedCart.names[id]) || '',
+      price: (cachedCart.prices && cachedCart.prices[id]) || 0,
+      qty,
+      imageFileId: (cachedCart.imgs && cachedCart.imgs[id]) || ''
+    })) : [];
     const result = await api.createOrder({
       clientRequestId: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 10),
       orderType: 'grocery',
-      itemName: '便利店',
+      itemName: storeName,
       remark: form.remark,
       orderDetail: form.itemList,
+      groceryItems,
       pickupMode: 'dorm',
+      pickupAddress: (cachedCart && cachedCart.storeAddress) ? cachedCart.storeAddress : '',
       destinationLabel: dormAddress.value || '宿舍楼',
       contributionReward: form.contribution,
       imageFileIds: [],

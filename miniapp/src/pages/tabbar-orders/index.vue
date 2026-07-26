@@ -123,11 +123,20 @@ function formatOrder(order) {
   let statusText = { WAITING: '待接单', DELIVERING: '配送中', COMPLETED: '已完成', EXPIRED: '已过期' }[order.status] || order.status;
   if (order.withdrawn) statusText = '已下架';
   const statusClass = order.withdrawn ? 'expired' : { WAITING: 'waiting', DELIVERING: 'delivering', COMPLETED: 'completed', EXPIRED: 'expired' }[order.status] || '';
+  let fromText = order.itemName || (isStation ? '驿站' : '宿舍楼下');
+  if (order.orderType === 'grocery' && order.pickupAddress) {
+    fromText = order.itemName + '(' + order.pickupAddress + ')';
+  }
+  let displayText = order.orderDetail || order.itemName;
+  if (order.orderType === 'printing') {
+    const count = (order.imageFileIds && order.imageFileIds.length) || (order.orderDetail ? order.orderDetail.split(/[、,，]/).filter(Boolean).length : 0);
+    displayText = count > 0 ? (count + '份文件要打印') : '帮打印';
+  }
   return {
     ...order,
     typeName: typeLabel[order.orderType] || '外卖',
-    displayText: order.orderDetail || order.itemName,
-    routeFrom: order.itemName || (isStation ? '驿站' : '宿舍楼下'),
+    displayText,
+    routeFrom: fromText,
     routeTo: order.destinationLabel || pub.fullRoomLabel || '',
     statusText,
     statusClass,
@@ -137,10 +146,14 @@ function formatOrder(order) {
   };
 }
 
+function getOrderLimit(o) {
+  if (o.status === 'DELIVERING') return o.deliveryLimitMinutes ?? o.timeLimitMinutes ?? 720;
+  return o.acceptLimitMinutes ?? o.timeLimitMinutes ?? 720;
+}
+
 function getTimerText(order) {
   if (order.withdrawn || order.status === 'COMPLETED' || order.status === 'EXPIRED') return '';
-  const limit = order.status === 'DELIVERING' ? (order.deliveryLimitMinutes ?? order.timeLimitMinutes ?? 720) : (order.acceptLimitMinutes ?? order.timeLimitMinutes ?? 720);
-  if (limit >= 720) return '不限时';
+  if (getOrderLimit(order) >= 720) return '不限时';
   const deadline = order.status === 'WAITING' ? order.expiresAt : order.deliveryDeadline;
   if (!deadline) return '';
   const remaining = Math.floor((new Date(deadline).getTime() - now.value) / 1000);

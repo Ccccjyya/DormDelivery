@@ -139,20 +139,22 @@ const now = ref(Date.now());
 let timer = 0;
 const typeLabel = { takeout: '外卖', package: '快递', grocery: '帮买', printing: '打印' };
 
+function getOrderLimit(o) {
+  if (o.status === 'DELIVERING') return o.deliveryLimitMinutes ?? o.timeLimitMinutes ?? 720;
+  return o.acceptLimitMinutes ?? o.timeLimitMinutes ?? 720;
+}
+
 function getTimerText(order) {
   if (order.withdrawn || order.status === 'COMPLETED' || order.status === 'EXPIRED') return '';
-  const limit = order.status === 'DELIVERING' ? (order.deliveryLimitMinutes ?? order.timeLimitMinutes ?? 720) : (order.acceptLimitMinutes ?? order.timeLimitMinutes ?? 720);
-  if (limit >= 720) return '不限时';
+  if (getOrderLimit(order) >= 720) return '不限时';
   const ts = now.value;
   const deadline = order.status === 'WAITING' ? order.expiresAt : order.deliveryDeadline;
   if (!deadline) return '';
   const remaining = Math.floor((new Date(deadline).getTime() - ts) / 1000);
   if (remaining <= 0) {
-    const over = Math.abs(remaining);
-    const oH = Math.floor(over / 3600);
-    const oM = Math.floor((over % 3600) / 60);
-    const oS = over % 60;
     if (order.status === 'WAITING') return '已过期';
+    const over = Math.abs(remaining);
+    const oH = Math.floor(over / 3600), oM = Math.floor((over % 3600) / 60), oS = over % 60;
     return oH > 0 ? '超时 ' + oH + ':' + String(oM).padStart(2, '0') + ':' + String(oS).padStart(2, '0') : '超时 ' + oM + ':' + String(oS).padStart(2, '0');
   }
   const d = Math.floor(remaining / 86400);
@@ -211,10 +213,15 @@ async function fetchOrders() {
     const raw = (result?.items || []).map(function(order) {
       const pub = order.publisherSnapshot || {};
       const isStation = order.pickupMode === 'station';
-      return {
-        typeName: { takeout: '外卖', package: '快递', grocery: '帮买', printing: '打印' }[order.orderType] || '外卖',
-        displayText: order.orderDetail || order.itemName,
-        routeFrom: order.itemName || (isStation ? '驿站' : '宿舍楼下'),
+      let displayText = order.orderDetail || order.itemName;
+    if (order.orderType === 'printing') {
+      const count = (order.imageFileIds && order.imageFileIds.length) || (order.orderDetail ? order.orderDetail.split(/[、,，]/).filter(Boolean).length : 0);
+      displayText = count > 0 ? (count + '份文件要打印') : '帮打印';
+    }
+    return {
+      typeName: { takeout: '外卖', package: '快递', grocery: '帮买', printing: '打印' }[order.orderType] || '外卖',
+      displayText,
+        routeFrom: (order.orderType === 'grocery' && order.pickupAddress) ? (order.itemName + '(' + order.pickupAddress + ')') : (order.itemName || (isStation ? '驿站' : '宿舍楼下')),
         routeTo: order.destinationLabel || pub.fullRoomLabel || '',
         statusText: '待接单',
         statusClass: 'waiting',
@@ -224,6 +231,8 @@ async function fetchOrders() {
         expiresAt: order.expiresAt,
         deliveryDeadline: order.deliveryDeadline,
         timeLimitMinutes: order.timeLimitMinutes,
+        acceptLimitMinutes: order.acceptLimitMinutes,
+        deliveryLimitMinutes: order.deliveryLimitMinutes,
         publisherFloorNo: pub.floorNo,
         withdrawn: order.withdrawn,
         status: order.status,
@@ -241,31 +250,8 @@ async function fetchOrders() {
 function updateTimers() {
   const ts = Date.now();
   availableOrders.value = availableOrders.value.map(function(o) {
-    let txt = '', cls = '';
-    if (!o.withdrawn && o.status !== 'COMPLETED' && o.status !== 'EXPIRED') {
-      const limit = o.status === 'DELIVERING' ? (o.deliveryLimitMinutes ?? o.timeLimitMinutes ?? 720) : (o.acceptLimitMinutes ?? o.timeLimitMinutes ?? 720);
-      if (limit >= 720) {
-        txt = '不限时';
-      } else {
-        const dl = o.status === 'WAITING' ? o.expiresAt : o.deliveryDeadline;
-        if (dl) {
-          const r = Math.floor((new Date(dl).getTime() - ts) / 1000);
-          if (r <= 0) {
-            if (o.status === 'WAITING') { txt = '已过期'; }
-            else { const oh = Math.floor(Math.abs(r)/3600), om = Math.floor((Math.abs(r)%3600)/60), os = Math.abs(r)%60;
-              txt = oh>0 ? '超时 '+oh+':'+String(om).padStart(2,'0')+':'+String(os).padStart(2,'0') : '超时 '+om+':'+String(os).padStart(2,'0'); cls='timer-overdue'; }
-          } else {
-            const d=Math.floor(r/86400),h=Math.floor((r%86400)/3600),m=Math.floor((r%3600)/60),s=r%60;
-            if(d>0)txt=d+'天 '+h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-            else if(h>0)txt=h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-            else if(m>0)txt=m+':'+String(s).padStart(2,'0');
-            else txt=s+'秒';
-          }
-        }
-      }
-    }
-    o.timerText = txt;
-    o.timerClass = cls;
+    o.timerText = getTimerText(o);
+    o.timerClass = getTimerClass(o);
     return o;
   });
 }
@@ -281,7 +267,7 @@ async function refresh() {
 }
 
 onMounted(() => {
-  timer = setInterval(() => { updateTimers(); }, 1000);
+  timer = setInterval(() => { now.value = Date.now(); updateTimers(); }, 1000);
   refresh();
 });
 
