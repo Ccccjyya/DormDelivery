@@ -1,1 +1,1 @@
-"use strict";const o=require("../common/vendor.js"),e="cloud1-placeholder00000000";exports.CLOUDBASE_ENV_ID=e,exports.CLOUD_API_FUNCTION="api",exports.initCloudBase=function(){void 0!==o.wx$1&&o.wx$1.cloud&&o.wx$1.cloud.init({env:e,traceUser:!0})};
+"use strict";const o=require("../common/vendor.js"),e="cloud1-d0g51zhvo764bc013";exports.CLOUDBASE_ENV_ID=e,exports.CLOUD_API_FUNCTION="api",exports.initCloudBase=function(){void 0!==o.wx$1&&o.wx$1.cloud&&o.wx$1.cloud.init({env:e,traceUser:!0})};
