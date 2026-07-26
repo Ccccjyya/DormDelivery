@@ -54,7 +54,7 @@
             <text class="menu-text">我接到的</text>
             <text class="menu-arrow">›</text>
           </view>
-          <view class="menu-item" @click="navigateTo('/pages/complaint-list/index')">
+          <view class="menu-item" @click="navigateTo('/pages/my-complaints/index')">
             <view class="mi mi-clock"></view>
             <text class="menu-text">我的投诉</text>
             <text class="menu-arrow">›</text>
@@ -72,7 +72,7 @@
           </view>
           <view class="menu-item" @click="navigateTo('/pages/weekly-quota/index')">
             <view class="mi mi-plus"></view>
-            <text class="menu-text">发单次数记录</text>
+            <text class="menu-text">发单接单统计</text>
             <text class="menu-arrow">›</text>
           </view>
         </view>
@@ -97,7 +97,7 @@
       <view class="section">
         <view class="section-title">更多</view>
         <view class="menu-card">
-          <view class="menu-item" @click="navigateTo('/pages/announcement-list/index')">
+          <view class="menu-item" @click="navigateTo('/pages/announcements/index')">
             <view class="mi mi-bell"></view>
             <text class="menu-text">公告中心</text>
             <text class="menu-arrow">›</text>

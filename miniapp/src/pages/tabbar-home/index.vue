@@ -197,8 +197,8 @@ async function fetchToday() {
     let spent = 0;
     for (const r of items) {
       if (new Date(r.createdAt).toDateString() !== today) continue;
-      if (r.changeAmount > 0) earned += r.changeAmount;
-      else spent += Math.abs(r.changeAmount || 0);
+      if (r.changeType === 'ORDER_REWARD') earned += r.changeAmount;
+      else if (r.changeType === 'ORDER_PUBLISH' || r.changeType === 'COMPLAINT_PENALTY') spent += Math.abs(r.changeAmount || 0);
     }
     todayEarned.value = earned;
     todaySpent.value = spent;

@@ -4,7 +4,7 @@
       <view class="chat-title">{{ conversationTitle }}</view>
     </view>
 
-    <scroll-view class="chat-messages" scroll-y :scroll-into-view="scrollToId">
+    <scroll-view class="chat-messages" scroll-y :scroll-into-view="scrollToId" :style="msgListStyle">
       <view v-for="msg in messages" :key="msg.id" :id="'msg-' + msg.id" class="msg-row" :class="msg.isMine ? 'mine' : 'other'">
         <view class="msg-avatar">{{ msg.isMine ? '👤' : '🤝' }}</view>
         <view class="msg-content">
@@ -14,20 +14,33 @@
       </view>
     </scroll-view>
 
-    <view class="chat-input">
-      <input v-model="inputText" class="input-field" placeholder="输入消息..." confirm-type="send" @confirm="sendMessage" />
+    <view class="chat-input" :style="inputBarStyle">
+      <input v-model="inputText" class="input-field" placeholder="输入消息..." confirm-type="send" @confirm="sendMessage" :adjust-position="false" />
       <view class="send-btn" :class="{ disabled: !inputText.trim() }" @click="sendMessage">发送</view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const conversationTitle = ref('对话');
 const messages = ref([]);
 const inputText = ref('');
 const scrollToId = ref('');
+const keyboardHeight = ref(0);
+
+uni.onKeyboardHeightChange(res => {
+  keyboardHeight.value = (res && res.height) || 0;
+});
+
+const inputBarStyle = computed(() => {
+  return 'bottom: ' + keyboardHeight.value + 'px;';
+});
+
+const msgListStyle = computed(() => {
+  return 'padding-bottom: calc(120rpx + ' + keyboardHeight.value + 'px);';
+});
 
 function sendMessage() {
   if (!inputText.value.trim()) return;
@@ -38,10 +51,11 @@ function sendMessage() {
 
 <style scoped>
 .page {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: #f6f7f9;
+  overflow: hidden;
 }
 
 .chat-header {
@@ -49,6 +63,7 @@ function sendMessage() {
   background: #fff;
   border-bottom: 1rpx solid #e8eceb;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .chat-title {
@@ -60,6 +75,8 @@ function sendMessage() {
 .chat-messages {
   flex: 1;
   padding: 24rpx;
+  box-sizing: border-box;
+  min-height: 0;
 }
 
 .msg-row {
@@ -118,6 +135,9 @@ function sendMessage() {
 }
 
 .chat-input {
+  position: fixed;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   gap: 16rpx;
@@ -125,6 +145,9 @@ function sendMessage() {
   background: #fff;
   border-top: 1rpx solid #e8eceb;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  z-index: 10;
+  box-sizing: border-box;
+  transition: bottom 0.15s;
 }
 
 .input-field {

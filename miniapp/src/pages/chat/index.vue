@@ -1,6 +1,6 @@
 <template>
   <view class="page">
-    <scroll-view scroll-y class="msg-list" :scroll-into-view="lastMsgId" :scroll-with-animation="true" :enhanced="true" :show-scrollbar="false" lower-threshold="50">
+    <scroll-view scroll-y class="msg-list" :scroll-into-view="lastMsgId" :scroll-with-animation="true" :enhanced="true" :show-scrollbar="false" lower-threshold="50" :style="msgListStyle">
       <view v-for="msg in messages" :key="msg._divider ? msg.timeText : (msg.id || msg._id)">
         <view v-if="msg._divider" class="time-divider">
           <text class="td-text">{{ msg.timeText }}</text>
@@ -81,11 +81,24 @@ onLoad(async (q) => {
 
 uni.onKeyboardHeightChange(res => {
   keyboardHeight.value = (res && res.height) || 0;
+  if (keyboardHeight.value > 0 && messages.value.length > 0) {
+    const last = messages.value[messages.value.length - 1];
+    if (last) {
+      lastMsgId.value = '';
+      setTimeout(() => {
+        lastMsgId.value = 'm-' + (last.id || last._id);
+      }, 50);
+    }
+  }
 });
 onUnmounted(() => clearInterval(pollTimer));
 
 const inputBarStyle = computed(() => {
   return 'bottom: ' + keyboardHeight.value + 'px;';
+});
+
+const msgListStyle = computed(() => {
+  return 'padding-bottom: calc(140rpx + ' + keyboardHeight.value + 'px);';
 });
 
 async function poll() {
@@ -127,10 +140,9 @@ function formatDividerTime(d) {
 async function sendText() {
   const t = text.value.trim();
   if (!t) return;
-  if (!orderId.value) return uni.showToast({ title: '请从订单页进入聊天', icon: 'none' });
   text.value = '';
   try {
-    await api.sendChat({ orderId: orderId.value, content: t, type: 'text' });
+    await api.sendChat({ orderId: orderId.value || undefined, peerOpenid: peerOpenid.value || undefined, content: t, type: 'text' });
     await poll();
   } catch (e) {}
 }
@@ -145,7 +157,7 @@ async function chooseImage() {
       uni.showLoading({ title: '上传中' });
       try {
         const uploadRes = await wx.cloud.uploadFile({ cloudPath: 'chat/' + Date.now() + '.jpg', filePath: tempPath });
-        await api.sendChat({ orderId: orderId.value, fileId: uploadRes.fileID, type: 'image' });
+        await api.sendChat({ orderId: orderId.value || undefined, peerOpenid: peerOpenid.value || undefined, fileId: uploadRes.fileID, type: 'image' });
         await poll();
       } catch (e) {
         uni.showToast({ title: '发送失败', icon: 'none' });

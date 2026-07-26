@@ -4,7 +4,12 @@
     <view v-if="errorMessage" class="error-state">{{ errorMessage }}<button class="retry" @click="load(true)">重新加载</button></view><view v-else-if="!items.length && !loading" class="empty">暂无相关投诉</view>
     <view v-for="item in items" :key="item.complaintId" class="card" @click="detail(item.complaintId)">
       <view class="row"><strong>{{ item.orderSnapshot?.itemName || '订单投诉' }}</strong><text>{{ label(item.status) }}</text></view>
-      <view class="muted">投诉人：{{ item.orderSnapshot?.publisherSnapshot?.displayName }} · 被投诉人：{{ item.orderSnapshot?.receiverSnapshot?.displayName }}</view><view class="muted">{{ summary(item.reason) }}</view><view class="muted">{{ formatDateTime(item.createdAt) }}</view>
+      <view class="muted">投诉人：{{ item.orderSnapshot?.publisherSnapshot?.displayName }} · 被投诉人：{{ item.orderSnapshot?.receiverSnapshot?.displayName }}</view>
+      <view class="muted">{{ summary(item.reason) }}</view>
+      <view class="row muted">
+        <text>{{ formatDateTime(item.createdAt) }}</text>
+        <text class="link" @click.stop="goOrder(item.orderId)">查看订单 ›</text>
+      </view>
     </view>
     <view v-if="loading" class="empty">加载中…</view><view v-else-if="items.length && !hasMore" class="empty">没有更多了</view>
   </view>
@@ -23,6 +28,7 @@ function changeStatus(value) { if (status.value === value) return; status.value 
 function label(v){return ({PENDING:'待审核',UPHELD:'投诉成立',DISMISSED:'投诉不成立'})[v]||''}
 function summary(value) { const text = String(value || ''); return text.length > 30 ? `${text.slice(0, 30)}…` : text; }
 function detail(complaintId) { const value=String(complaintId||'').trim();if(!value)return uni.showToast({title:'投诉信息无效',icon:'none'});uni.navigateTo({ url: `/pages-admin/complaint-detail/index?complaintId=${encodeURIComponent(value)}` }); }
+function goOrder(orderId) { const value=String(orderId||'').trim();if(!value)return uni.showToast({title:'订单信息无效',icon:'none'});uni.navigateTo({ url: `/pages/order-detail/index?id=${encodeURIComponent(value)}&viewOnly=1` }); }
 onShow(() => load(true)); onPullDownRefresh(() => runPullDownRefresh(() => load(true))); onReachBottom(() => load());
 </script>
-<style scoped>.filters{display:flex;gap:12rpx;margin-bottom:20rpx}.filter{flex:1;padding:16rpx 8rpx;text-align:center;background:#EAF4FD;color:#2E8FD9;border-radius:6px;font-size:26rpx}.filter.active{background:#3E9BF0;color:#fff}.card{line-height:1.8}.error-state{text-align:center;color:#a02b2b;padding:60rpx 0}.retry{width:220rpx;margin-top:20rpx;font-size:26rpx}</style>
+<style scoped>.filters{display:flex;gap:12rpx;margin-bottom:20rpx}.filter{flex:1;padding:16rpx 8rpx;text-align:center;background:#EAF4FD;color:#2E8FD9;border-radius:6px;font-size:26rpx}.filter.active{background:#3E9BF0;color:#fff}.card{line-height:1.8}.link{color:#3E9BF0;font-size:26rpx}.error-state{text-align:center;color:#a02b2b;padding:60rpx 0}.retry{width:220rpx;margin-top:20rpx;font-size:26rpx}</style>

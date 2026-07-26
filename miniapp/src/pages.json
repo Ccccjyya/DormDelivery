@@ -28,6 +28,7 @@
     { "path": "pages/quota-records/index", "style": { "navigationBarTitleText": "发单次数记录" } },
     { "path": "pages/announcements/index", "style": { "navigationBarTitleText": "公告", "enablePullDownRefresh": true } },
     { "path": "pages/announcement-detail/index", "style": { "navigationBarTitleText": "公告详情" } },
+    { "path": "pages/weekly-quota/index", "style": { "navigationBarTitleText": "发单接单统计" } },
     { "path": "pages-super/dashboard/index", "style": { "navigationBarTitleText": "管理中心" } },
     { "path": "pages-super/rule-management/index", "style": { "navigationBarTitleText": "规则管理" } },
     { "path": "pages-super/admin-management/index", "style": { "navigationBarTitleText": "管理员管理", "enablePullDownRefresh": true } },

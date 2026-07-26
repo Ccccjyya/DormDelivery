@@ -9,7 +9,21 @@ function cleanText(value, field, max) {
 }
 
 async function send({ db, openid, data }) {
-  const orderId = cleanText(data.orderId, '订单ID', 64);
+  let orderId = data.orderId ? String(data.orderId).trim() : '';
+  const peerOpenid = data.peerOpenid ? String(data.peerOpenid).trim() : '';
+
+  // If no orderId but peerOpenid given, find latest active order between users
+  if (!orderId && peerOpenid) {
+    const orders = await db.collection('orders').where(db.command.or([
+      { publisherOpenid: openid, receiverOpenid: peerOpenid },
+      { publisherOpenid: peerOpenid, receiverOpenid: openid }
+    ])).orderBy('createdAt', 'desc').limit(1).get();
+    if (orders.data.length > 0) {
+      orderId = orders.data[0]._id;
+    }
+  }
+
+  if (!orderId) throw fail('ORDER_NOT_FOUND', '订单不存在');
   const order = (await db.collection('orders').doc(orderId).get()).data;
   if (!order) throw fail('ORDER_NOT_FOUND', '订单不存在');
 

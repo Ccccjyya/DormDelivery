@@ -230,7 +230,7 @@ function updateButtons() {
   canAccept.value = !viewOnly.value && o.status === 'WAITING' && !o.withdrawn && o.publisherId !== uid;
   canComplete.value = !viewOnly.value && o.status === 'DELIVERING' && o.receiverId === uid;
   canWithdraw.value = !viewOnly.value && o.status === 'WAITING' && !o.withdrawn && o.publisherId === uid;
-  showChat.value = !o.withdrawn && ['DELIVERING', 'COMPLETED'].includes(o.status) && (o.publisherId === uid || o.receiverId === uid);
+  showChat.value = !viewOnly.value && !o.withdrawn && ['DELIVERING', 'COMPLETED'].includes(o.status) && (o.publisherId === uid || o.receiverId === uid);
 }
 
 function updateTimer() {
