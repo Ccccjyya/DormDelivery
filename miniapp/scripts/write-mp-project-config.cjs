@@ -3,7 +3,7 @@ const path = require('path');
 
 const output = path.resolve(__dirname, '..', 'dist', 'build', 'mp-weixin');
 const config = {
-  appid: 'wxfc481877185149ea',
+  appid: 'wx0000000000000000',
   projectname: 'DormDelivery-CloudBase',
   miniprogramRoot: './',
   cloudfunctionRoot: '../../../cloudfunctions/',
